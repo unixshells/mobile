@@ -99,7 +99,7 @@ class SSHService {
     // Step 3: SSH through the tunnel (end-to-end encrypted).
     final targetClient = SSHClient(
       tunnel,
-      username: conn.username.isNotEmpty ? conn.username : 'latch',
+      username: conn.sessionName?.isNotEmpty == true ? conn.sessionName! : 'default',
       identities: identity.isNotEmpty ? identity : null,
       onVerifyHostKey: _makeHostKeyVerifier(dest, defaultSSHPort),
       onPasswordRequest: conn.authMethod == AuthMethod.password
@@ -121,28 +121,17 @@ class SSHService {
   }
 
   /// Open an interactive shell on the client.
-  /// If [sessionName] is non-empty and not "default", uses exec to select
-  /// a named latch session. Otherwise uses shell (the default session).
+  /// Session selection is handled by the SSH username, so this always
+  /// opens a plain shell.
   Future<SSHSession> openShell(SSHClient client,
       {int cols = 80,
       int rows = 24,
-      bool agentForwarding = false,
-      String? sessionName}) async {
+      bool agentForwarding = false}) async {
     final pty = SSHPtyConfig(
       width: cols,
       height: rows,
       type: terminalType,
     );
-
-    if (sessionName != null &&
-        sessionName.isNotEmpty &&
-        sessionName != 'default') {
-      return await client.execute(
-        sessionName,
-        pty: pty,
-        agentForwarding: agentForwarding,
-      );
-    }
 
     return await client.shell(
       pty: pty,

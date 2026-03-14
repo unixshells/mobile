@@ -269,8 +269,9 @@ class _ConnectViewState extends State<ConnectView> {
                   validator: _required),
             ],
 
-            _field(_usernameCtrl, 'SSH Username', 'root',
-                validator: _required),
+            if (_type == ConnectionType.direct)
+              _field(_usernameCtrl, 'SSH Username', 'root',
+                  validator: _required),
 
             const SizedBox(height: 16),
             _sectionHeader('Authentication'),
@@ -334,7 +335,8 @@ class _ConnectViewState extends State<ConnectView> {
             _field(_sessionNameCtrl, 'Latch Session', 'default'),
             const Padding(
               padding: EdgeInsets.only(bottom: 12),
-              child: Text('Session name on the remote latch server',
+              child: Text(
+                  'Leave blank for "default". Selects which latch session to attach to.',
                   style: TextStyle(color: Colors.white38, fontSize: 12)),
             ),
 

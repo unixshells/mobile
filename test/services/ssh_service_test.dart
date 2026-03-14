@@ -1,45 +1,38 @@
 import 'package:flutter_test/flutter_test.dart';
 
-// Test the session name routing logic in SSHService.openShell().
-// We can't call openShell() directly without a real SSHClient, but we
-// can verify the branching condition that determines shell vs execute.
+// Test the session name → SSH username logic in SSHService._connectRelay().
+// The SSH username IS the session name. No more exec-based session selection.
 
 void main() {
-  group('SSHService session name routing', () {
-    // The logic in openShell: use execute() when sessionName is non-null,
-    // non-empty, and not "default". Otherwise use shell().
+  group('SSHService relay username selection', () {
+    // The logic in _connectRelay: use sessionName as SSH username,
+    // falling back to "default" if empty/null.
 
-    test('null session name should use shell', () {
-      expect(_shouldUseExec(null), isFalse);
+    test('null session name should use "default"', () {
+      expect(_relayUsername(null), equals('default'));
     });
 
-    test('empty session name should use shell', () {
-      expect(_shouldUseExec(''), isFalse);
+    test('empty session name should use "default"', () {
+      expect(_relayUsername(''), equals('default'));
     });
 
-    test('"default" session name should use shell', () {
-      expect(_shouldUseExec('default'), isFalse);
+    test('"default" session name should use "default"', () {
+      expect(_relayUsername('default'), equals('default'));
     });
 
-    test('"work" session name should use execute', () {
-      expect(_shouldUseExec('work'), isTrue);
+    test('"work" session name should use "work"', () {
+      expect(_relayUsername('work'), equals('work'));
     });
 
-    test('"dev" session name should use execute', () {
-      expect(_shouldUseExec('dev'), isTrue);
-    });
-
-    test('whitespace-only session name after trim is empty, uses shell', () {
-      // connect_view trims before saving, so whitespace becomes null.
-      // After trim, empty string uses shell.
-      expect(_shouldUseExec(''), isFalse);
+    test('"dev" session name should use "dev"', () {
+      expect(_relayUsername('dev'), equals('dev'));
     });
   });
 }
 
-/// Mirrors the branching logic in SSHService.openShell().
-bool _shouldUseExec(String? sessionName) {
-  return sessionName != null &&
-      sessionName.isNotEmpty &&
-      sessionName != 'default';
+/// Mirrors the username selection logic in SSHService._connectRelay().
+String _relayUsername(String? sessionName) {
+  return (sessionName != null && sessionName.isNotEmpty)
+      ? sessionName
+      : 'default';
 }

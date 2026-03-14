@@ -39,8 +39,7 @@ class SessionManager extends ChangeNotifier {
 
     final result = await _sshService.connect(conn);
     final shell = await _sshService.openShell(result.targetClient,
-        agentForwarding: conn.agentForwarding,
-        sessionName: conn.sessionName);
+        agentForwarding: conn.agentForwarding);
     // Start port forwards.
     final forwards = conn.portForwards.isNotEmpty
         ? await _sshService.startPortForwards(
