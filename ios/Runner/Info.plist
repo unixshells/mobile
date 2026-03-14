@@ -35,6 +35,8 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Unix Shells needs local network access to connect to SSH servers on your network.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Unix Shells needs access to your photo library to import SSH keys or transfer files via SFTP.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
