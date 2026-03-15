@@ -52,7 +52,6 @@ dependencies:
   pointycastle: ^3.9.1
   path: ^1.9.1
   receive_sharing_intent: ^1.8.1
-  flutter_pty: ^0.4.0
 
 dev_dependencies:
   flutter_test:

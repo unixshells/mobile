@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -12,7 +10,6 @@ import '../../services/storage_service.dart';
 import '../../util/constants.dart';
 import '../connect/connect_view.dart';
 import '../keys/key_list_view.dart';
-import '../local/local_terminal_view.dart';
 import '../settings/settings_view.dart';
 import '../terminal/terminal_view.dart';
 import 'connection_tile.dart';
@@ -161,15 +158,6 @@ class _HomeViewState extends State<HomeView>
           ],
         ),
         actions: [
-          if (Platform.isAndroid || Platform.isMacOS || Platform.isLinux)
-            IconButton(
-              icon: const Icon(Icons.terminal_outlined),
-              tooltip: 'Local Terminal',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (_) => const LocalTerminalView()),
-              ),
-            ),
           IconButton(
             icon: Icon(_searching ? Icons.close : Icons.search),
             onPressed: () {
