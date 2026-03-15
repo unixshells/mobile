@@ -236,6 +236,127 @@ class _HomeViewState extends State<HomeView>
     );
   }
 
+  Future<void> _connectToDeviceSession(Device device, String sessionName) async {
+    final storage = context.read<StorageService>();
+    final account = await storage.getAccount();
+    final conn = await _buildDeviceConnection(device);
+    // Check per-session prefs (mosh, key) — fall back to device prefs.
+    if (account != null) {
+      final sessionPrefs = await storage.getDevicePrefs(
+          account.username, '${device.name}:$sessionName');
+      final useMosh = sessionPrefs['useMosh'] as bool? ?? conn.useMosh;
+      final keyId = sessionPrefs['keyId'] as String? ?? conn.keyId;
+      final withSession = conn.copyWith(
+          sessionName: sessionName, useMosh: useMosh, keyId: keyId);
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TerminalPage(pendingConnection: withSession),
+        ),
+      );
+      return;
+    }
+    final withSession = conn.copyWith(sessionName: sessionName);
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TerminalPage(pendingConnection: withSession),
+      ),
+    );
+  }
+
+  Future<void> _editSessionPrefs(Device device, String sessionName) async {
+    final storage = context.read<StorageService>();
+    final keyService = context.read<KeyService>();
+    final account = await storage.getAccount();
+    if (account == null) return;
+    final keys = await keyService.list();
+    final prefs = await storage.getDevicePrefs(account.username, '${device.name}:$sessionName');
+
+    var useMosh = prefs['useMosh'] as bool? ?? false;
+    var keyId = prefs['keyId'] as String? ?? (keys.isNotEmpty ? keys.first.id : null);
+
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: bgCard,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: 24, right: 24, top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${device.name} / $sessionName',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Use Mosh',
+                    style: TextStyle(color: Colors.white)),
+                value: useMosh,
+                onChanged: (v) => setSheetState(() => useMosh = v),
+              ),
+              if (keys.length > 1) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: keyId,
+                  dropdownColor: bgCard,
+                  style: const TextStyle(color: Colors.white),
+                  items: keys.map((k) => DropdownMenuItem(
+                        value: k.id,
+                        child: Text(k.label,
+                            style: const TextStyle(color: Colors.white)),
+                      )).toList(),
+                  onChanged: (v) => setSheetState(() => keyId = v),
+                  decoration: InputDecoration(
+                    labelText: 'SSH Key',
+                    labelStyle: const TextStyle(color: Colors.white54),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.white24),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.blue),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: bgDark,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                  onPressed: () async {
+                    final newPrefs = <String, dynamic>{
+                      'useMosh': useMosh,
+                      if (keyId != null) 'keyId': keyId,
+                    };
+                    await storage.saveDevicePrefs(
+                        account.username, '${device.name}:$sessionName', newPrefs);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  child: const Text('Save',
+                      style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _editDevicePrefs(Device device) async {
     final storage = context.read<StorageService>();
     final keyService = context.read<KeyService>();
@@ -401,30 +522,52 @@ class _HomeViewState extends State<HomeView>
             children: [
               if (onlineOnly.isNotEmpty) ...[
                 _tabSectionHeader('Online'),
-                ...onlineOnly.map((device) => ListTile(
+                ...onlineOnly.expand((device) {
+                  final alive = device.sessions
+                      .where((s) => s.status == 'alive')
+                      .toList();
+                  return [
+                    ListTile(
                       leading: CircleAvatar(
                         backgroundColor: Colors.green.withValues(alpha: 0.2),
-                        child: const Icon(Icons.circle, color: Colors.green, size: 12),
+                        child: const Icon(Icons.computer, color: Colors.green, size: 18),
                       ),
                       title: Text(device.name,
                           style: const TextStyle(color: Colors.white, fontSize: 15)),
-                      subtitle: Text(device.status,
+                      subtitle: Text(
+                          alive.isEmpty
+                              ? 'no sessions'
+                              : '${alive.length} session${alive.length == 1 ? '' : 's'}',
                           style: const TextStyle(color: Colors.white38, fontSize: 13)),
-                      trailing: PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, color: Colors.white38),
-                        color: bgCard,
-                        onSelected: (value) {
-                          if (value == 'edit') _editDevicePrefs(device);
-                        },
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Text('Edit', style: TextStyle(color: Colors.white)),
+                    ),
+                    ...alive.map((session) => ListTile(
+                          contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                          leading: const Icon(Icons.terminal, color: Colors.white38, size: 20),
+                          title: Text(session.name,
+                              style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                          subtitle: session.title.isNotEmpty
+                              ? Text(session.title,
+                                  style: const TextStyle(color: Colors.white30, fontSize: 12),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis)
+                              : null,
+                          trailing: PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert, color: Colors.white38),
+                            color: bgCard,
+                            onSelected: (value) {
+                              if (value == 'edit') _editSessionPrefs(device, session.name);
+                            },
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Text('Edit', style: TextStyle(color: Colors.white)),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      onTap: () => _connectToDevice(device),
-                    )),
+                          onTap: () => _connectToDeviceSession(device, session.name),
+                        )),
+                  ];
+                }),
               ],
               if (saved.isNotEmpty) ...[
                 if (onlineOnly.isNotEmpty) _tabSectionHeader('Saved'),
