@@ -25,46 +25,22 @@ void main() {
       expect(await api.healthCheck(), isFalse);
     });
 
-    test('signup returns username on 201', () async {
-      final client = MockClient((req) async {
-        expect(req.url.path, '/api/signup');
-        expect(req.method, 'POST');
-        final body = jsonDecode(req.body);
-        expect(body['username'], 'testuser');
-        return http.Response(jsonEncode({'username': 'testuser'}), 201);
-      });
-      final api = RelayApiService(client: client, baseURL: 'http://test');
-      final result = await api.signup(
-        username: 'testuser',
-        email: 'test@test.com',
-        pubkey: 'ssh-ed25519 AAAA test',
-        device: 'phone',
-      );
-      expect(result, 'testuser');
-    });
-
-    test('signup throws ApiException on 409', () async {
-      final client = MockClient((_) async =>
-          http.Response(jsonEncode({'error': 'username taken'}), 409));
-      final api = RelayApiService(client: client, baseURL: 'http://test');
-      expect(
-        () => api.signup(
-          username: 'taken',
-          email: 'e',
-          pubkey: 'p',
-          device: 'd',
-        ),
-        throwsA(isA<ApiException>()),
-      );
-    });
-
     test('requestMagicLink succeeds on 200', () async {
       final client = MockClient((req) async {
         expect(req.url.path, '/api/magic-link');
         return http.Response('{}', 200);
       });
       final api = RelayApiService(client: client, baseURL: 'http://test');
-      await api.requestMagicLink('test@test.com');
+      await api.requestMagicLink(email: 'test@test.com');
+    });
+
+    test('requestMagicLink with username succeeds on 200', () async {
+      final client = MockClient((req) async {
+        expect(req.url.path, '/api/magic-link');
+        return http.Response('{}', 200);
+      });
+      final api = RelayApiService(client: client, baseURL: 'http://test');
+      await api.requestMagicLink(username: 'testuser');
     });
 
     test('requestMagicLink throws on error', () async {
@@ -72,15 +48,15 @@ void main() {
           http.Response(jsonEncode({'error': 'not found'}), 404));
       final api = RelayApiService(client: client, baseURL: 'http://test');
       expect(
-        () => api.requestMagicLink('bad@email'),
+        () => api.requestMagicLink(email: 'bad@email'),
         throwsA(isA<ApiException>()),
       );
     });
 
-    test('addKey returns username on 200', () async {
+    test('addKey returns username and email on 200', () async {
       final client = MockClient((req) async {
         expect(req.url.path, '/api/add-key');
-        return http.Response(jsonEncode({'username': 'user1'}), 200);
+        return http.Response(jsonEncode({'username': 'user1', 'email': 'u@test.com'}), 200);
       });
       final api = RelayApiService(client: client, baseURL: 'http://test');
       final result = await api.addKey(
@@ -88,7 +64,8 @@ void main() {
         pubkey: 'pk',
         device: 'dev',
       );
-      expect(result, 'user1');
+      expect(result.username, 'user1');
+      expect(result.email, 'u@test.com');
     });
 
     test('getStatus parses account and devices', () async {

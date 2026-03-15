@@ -137,6 +137,7 @@ void main() {
       final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSSHSession(shell);
+      session.startListening();
 
       bridge.attach(session);
 
@@ -158,6 +159,7 @@ void main() {
       final bridge = TerminalBridge();
       final mosh = FakeMoshSession();
       final session = _makeMoshSession(mosh);
+      session.startListening();
 
       bridge.attach(session);
 
@@ -283,6 +285,7 @@ void main() {
       final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSSHSession(shell);
+      session.startListening();
 
       var endedCount = 0;
       bridge.onSessionEnded = (_) => endedCount++;

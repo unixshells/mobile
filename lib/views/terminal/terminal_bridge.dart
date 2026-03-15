@@ -20,10 +20,16 @@ class TerminalBridge {
   Terminal? get terminal => _terminal;
 
   void attach(ActiveSession session) {
-    // Unhook previous terminal's onOutput.
+    // Unhook previous session/terminal.
     _terminal?.onOutput = null;
+    if (_session != null) _session!.onEnded = null;
     _session = session;
     _terminal = session.terminal;
+
+    session.onEnded = () {
+      final cb = onSessionEnded;
+      if (cb != null) cb(session.id);
+    };
 
     final term = _terminal!;
     if (session.isMosh) {
@@ -48,6 +54,7 @@ class TerminalBridge {
 
   void detach() {
     _terminal?.onOutput = null;
+    _session?.onEnded = null;
     _session = null;
   }
 
@@ -65,7 +72,11 @@ class TerminalBridge {
         final shell = session.shell;
         if (shell == null) return;
         shell.stdin.add(Uint8List(0));
-      } catch (_) {}
+      } catch (_) {
+        session.ended = true;
+        final cb = onSessionEnded;
+        if (cb != null) cb(session.id);
+      }
     }
   }
 

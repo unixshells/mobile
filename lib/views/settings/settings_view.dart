@@ -6,11 +6,9 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/terminal_theme.dart';
-import '../../services/key_service.dart';
-import '../../services/relay_api_service.dart';
 import '../../services/storage_service.dart';
-import '../../services/sync_service.dart';
 import '../../util/constants.dart';
+import '../account/account_view.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -24,9 +22,6 @@ class _SettingsViewState extends State<SettingsView> {
   String _selectedTheme = 'default';
   double _fontSize = 14;
   String _fontFamily = 'monospace';
-  bool _syncEnabled = false;
-  String? _lastSync;
-  bool _syncing = false;
 
   static const _fontFamilies = [
     'monospace',
@@ -48,65 +43,15 @@ class _SettingsViewState extends State<SettingsView> {
     final theme = await storage.getSetting('theme');
     final fontSize = await storage.getSetting('font_size');
     final fontFamily = await storage.getSetting('font_family');
-    final syncEnabled = await storage.getSetting('sync_enabled');
-    final lastSync = await storage.getSetting('last_sync');
     _selectedTheme = theme ?? 'default';
     _fontSize = double.tryParse(fontSize ?? '') ?? 14;
     _fontFamily = fontFamily ?? 'monospace';
-    _syncEnabled = syncEnabled == 'true';
-    _lastSync = lastSync;
     setState(() => _loaded = true);
   }
 
   Future<void> _saveSetting(String key, String value) async {
     final storage = context.read<StorageService>();
     await storage.saveSetting(key, value);
-  }
-
-  SyncService get _syncService => SyncService(
-        context.read<StorageService>(),
-        RelayApiService(),
-        context.read<KeyService>(),
-      );
-
-  Future<void> _pushSync() async {
-    setState(() => _syncing = true);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      await _syncService.push();
-      final lastSync = await _syncService.lastSync();
-      if (mounted) setState(() => _lastSync = lastSync);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Config pushed to cloud')),
-      );
-    } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text('Push failed: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _syncing = false);
-    }
-  }
-
-  Future<void> _pullSync() async {
-    setState(() => _syncing = true);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final ok = await _syncService.pull();
-      final lastSync = await _syncService.lastSync();
-      if (mounted) setState(() => _lastSync = lastSync);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(ok ? 'Config pulled from cloud' : 'No cloud data found'),
-        ),
-      );
-    } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text('Pull failed: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _syncing = false);
-    }
   }
 
   Future<void> _exportBackup() async {
@@ -195,6 +140,24 @@ class _SettingsViewState extends State<SettingsView> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                _sectionHeader('Account'),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.person_outline,
+                      color: Colors.white54),
+                  title: const Text('Unix Shells Account',
+                      style: TextStyle(color: Colors.white)),
+                  subtitle: const Text(
+                      'Sign in for remote access and device discovery',
+                      style: TextStyle(color: Colors.white38, fontSize: 12)),
+                  trailing: const Icon(Icons.arrow_forward_ios,
+                      size: 14, color: Colors.white24),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AccountView()),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
                 // Terminal section.
                 _sectionHeader('Terminal Theme'),
                 _buildThemePicker(),
@@ -203,60 +166,6 @@ class _SettingsViewState extends State<SettingsView> {
                 _buildFontSizeSlider(),
                 const SizedBox(height: 12),
                 _buildFontFamilyPicker(),
-
-                const SizedBox(height: 24),
-                _sectionHeader('Cloud Sync'),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Sync via Relay',
-                      style: TextStyle(color: Colors.white)),
-                  subtitle: Text(
-                    _lastSync != null
-                        ? 'Last synced: $_lastSync'
-                        : 'Sync connections, keys, and settings across devices',
-                    style: const TextStyle(color: Colors.white38, fontSize: 12),
-                  ),
-                  value: _syncEnabled,
-                  onChanged: (v) {
-                    setState(() => _syncEnabled = v);
-                    _saveSetting('sync_enabled', v.toString());
-                  },
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: _syncing
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white54))
-                            : const Icon(Icons.cloud_upload_outlined,
-                                size: 18),
-                        label: const Text('Push'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white70,
-                          side: const BorderSide(color: Colors.white24),
-                        ),
-                        onPressed: _syncing ? null : _pushSync,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.cloud_download_outlined,
-                            size: 18),
-                        label: const Text('Pull'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white70,
-                          side: const BorderSide(color: Colors.white24),
-                        ),
-                        onPressed: _syncing ? null : _pullSync,
-                      ),
-                    ),
-                  ],
-                ),
 
                 const SizedBox(height: 24),
                 _sectionHeader('Local Backup'),

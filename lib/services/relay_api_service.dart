@@ -39,11 +39,14 @@ class RelayApiService {
   }
 
   /// Request a magic link for adding a new device.
-  Future<void> requestMagicLink(String email) async {
+  Future<void> requestMagicLink({String? username, String? email}) async {
+    final payload = <String, String>{'purpose': 'add-key'};
+    if (username != null) payload['username'] = username;
+    if (email != null) payload['email'] = email;
     final resp = await _client.post(
       Uri.parse('$_baseURL/api/magic-link'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'purpose': 'add-key'}),
+      body: jsonEncode(payload),
     ).timeout(_timeout);
     if (resp.statusCode != 200) {
       final body = jsonDecode(resp.body);
@@ -51,8 +54,8 @@ class RelayApiService {
     }
   }
 
-  /// Add a key using a magic link token.
-  Future<String> addKey({
+  /// Add a key using a magic link token. Returns {username, email}.
+  Future<AddKeyResult> addKey({
     required String token,
     required String pubkey,
     required String device,
@@ -71,45 +74,67 @@ class RelayApiService {
       throw ApiException(body['error'] ?? 'add key failed', resp.statusCode);
     }
     final body = jsonDecode(resp.body);
-    return body['username'] as String;
+    return AddKeyResult(
+      username: body['username'] as String,
+      email: body['email'] as String? ?? '',
+    );
   }
 
-  /// Push config to cloud. Requires auth token.
-  Future<void> pushSync({
-    required String username,
-    required String token,
-    required String data,
-  }) async {
-    final resp = await _client.put(
-      Uri.parse('$_baseURL/api/sync/$username'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({'data': data}),
-    ).timeout(_timeout * 2);
-    if (resp.statusCode != 200 && resp.statusCode != 204) {
-      final body = jsonDecode(resp.body);
-      throw ApiException(body['error'] ?? 'sync push failed', resp.statusCode);
-    }
-  }
-
-  /// Pull config from cloud. Returns the stored data string.
-  Future<String?> pullSync({
-    required String username,
-    required String token,
-  }) async {
+  /// Get online sessions for a user. Requires auth token (timestamp:signature).
+  Future<List<Device>> getSessions(String username, {required String token}) async {
     final resp = await _client.get(
-      Uri.parse('$_baseURL/api/sync/$username'),
+      Uri.parse('$_baseURL/api/sessions/$username'),
       headers: {'Authorization': 'Bearer $token'},
+    ).timeout(_timeout);
+    if (resp.statusCode != 200) {
+      throw ApiException('sessions request failed', resp.statusCode);
+    }
+    final body = jsonDecode(resp.body) as Map<String, dynamic>;
+    final devices = (body['devices'] as List)
+        .map((d) => Device.fromJson(d as Map<String, dynamic>))
+        .toList();
+    return devices;
+  }
+
+  /// Create a device request (add-key). Server emails approval link.
+  /// Returns the request ID for polling.
+  Future<String> deviceRequest({
+    required String username,
+    required String pubkey,
+    required String device,
+  }) async {
+    final resp = await _client.post(
+      Uri.parse('$_baseURL/api/device-request'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': username,
+        'action': 'add-key',
+        'pubkey': pubkey,
+        'device': device,
+      }),
+    ).timeout(_timeout);
+    if (resp.statusCode != 200) {
+      final body = jsonDecode(resp.body);
+      throw ApiException(body['error'] ?? 'request failed', resp.statusCode);
+    }
+    final body = jsonDecode(resp.body);
+    return body['id'] as String;
+  }
+
+  /// Poll a device request until approved. Returns username on approval.
+  Future<String?> getDeviceRequestStatus(String id) async {
+    final resp = await _client.get(
+      Uri.parse('$_baseURL/api/device-request/$id'),
     ).timeout(_timeout);
     if (resp.statusCode == 404) return null;
     if (resp.statusCode != 200) {
-      final body = jsonDecode(resp.body);
-      throw ApiException(body['error'] ?? 'sync pull failed', resp.statusCode);
+      throw ApiException('request expired', resp.statusCode);
     }
     final body = jsonDecode(resp.body) as Map<String, dynamic>;
-    return body['data'] as String?;
+    if (body['status'] == 'approved') {
+      return body['username'] as String?;
+    }
+    return null; // Still pending.
   }
 
   /// Request a mosh UDP relay session.
@@ -167,6 +192,13 @@ class RelayApiService {
       devices: devices,
     );
   }
+}
+
+class AddKeyResult {
+  final String username;
+  final String email;
+
+  AddKeyResult({required this.username, required this.email});
 }
 
 class AccountStatus {

@@ -1,8 +1,13 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/account.dart';
 import '../../models/device.dart';
+import '../../models/ssh_key.dart';
+import '../../services/discovery_service.dart';
 import '../../services/key_service.dart';
 import '../../services/relay_api_service.dart';
 import '../../services/storage_service.dart';
@@ -20,6 +25,7 @@ class _AccountViewState extends State<AccountView> {
   List<Device> _devices = [];
   bool _loading = true;
   bool _busy = false;
+  String? _busyMessage;
 
   @override
   void initState() {
@@ -107,22 +113,26 @@ class _AccountViewState extends State<AccountView> {
                   backgroundColor: Colors.blue,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                onPressed: _busy ? null : () => _showSignupSheet(),
-                child: const Text('Sign Up',
-                    style: TextStyle(fontSize: 16, color: Colors.white)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.white24),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                onPressed: _busy ? null : () => _showSigninSheet(),
-                child: const Text('Sign In',
-                    style: TextStyle(fontSize: 16, color: Colors.white)),
+                onPressed: _busy ? null : _showSigninSheet,
+                child: _busy
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(
+                            width: 20, height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white54),
+                          ),
+                          if (_busyMessage != null) ...[
+                            const SizedBox(height: 8),
+                            Text(_busyMessage!,
+                                style: const TextStyle(
+                                    color: Colors.white54, fontSize: 12)),
+                          ],
+                        ],
+                      )
+                    : const Text('Sign In',
+                        style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
             ),
           ],
@@ -214,64 +224,17 @@ class _AccountViewState extends State<AccountView> {
     );
   }
 
-  void _showSignupSheet() {
-    final usernameCtrl = TextEditingController();
-    final emailCtrl = TextEditingController();
-    final deviceCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: bgCard,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: 24, right: 24, top: 24,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-        ),
-        child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Sign Up',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              _sheetField(usernameCtrl, 'Username', validator: _required),
-              _sheetField(emailCtrl, 'Email', validator: _validateEmail),
-              _sheetField(deviceCtrl, 'Device Name', validator: _required),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                  onPressed: () {
-                    if (!formKey.currentState!.validate()) return;
-                    Navigator.pop(ctx);
-                    _performSignup(
-                      usernameCtrl.text.trim(),
-                      emailCtrl.text.trim(),
-                      deviceCtrl.text.trim(),
-                    );
-                  },
-                  child: const Text('Create Account',
-                      style: TextStyle(color: Colors.white)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  static String _deviceName() {
+    if (Platform.isAndroid) return 'android';
+    if (Platform.isIOS) return 'iphone';
+    if (Platform.isMacOS) return 'mac';
+    if (Platform.isLinux) return 'linux';
+    return 'mobile';
   }
 
   void _showSigninSheet() {
-    final emailCtrl = TextEditingController();
+    final usernameCtrl = TextEditingController();
+    final keyService = context.read<KeyService>();
 
     showModalBottomSheet(
       context: context,
@@ -282,50 +245,172 @@ class _AccountViewState extends State<AccountView> {
           left: 24, right: 24, top: 24,
           bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Sign In',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('We\'ll send a magic link to your email.',
-                style: TextStyle(color: Colors.white54)),
-            const SizedBox(height: 16),
-            _sheetField(emailCtrl, 'Email'),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style:
-                    ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                onPressed: () async {
-                  final email = emailCtrl.text.trim();
-                  if (email.isEmpty) return;
-                  Navigator.pop(ctx);
-                  await _requestMagicLink(email);
-                },
-                child: const Text('Send Magic Link',
-                    style: TextStyle(color: Colors.white)),
+        child: FutureBuilder<List<SSHKeyPair>>(
+          future: keyService.list(),
+          builder: (ctx, snapshot) {
+            final keys = snapshot.data ?? [];
+            String? selectedKeyId = keys.isNotEmpty ? keys.first.id : null;
+
+            return StatefulBuilder(
+              builder: (ctx, setSheetState) => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Sign In',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Text('Enter your username. We\'ll email you an approval link.',
+                      style: TextStyle(color: Colors.white54)),
+                  const SizedBox(height: 16),
+                  _sheetField(usernameCtrl, 'Username'),
+                  const SizedBox(height: 4),
+                  if (keys.isNotEmpty) ...[
+                    const Text('SSH Key',
+                        style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    DropdownButtonFormField<String>(
+                      value: selectedKeyId,
+                      dropdownColor: bgCard,
+                      style: const TextStyle(color: Colors.white),
+                      items: [
+                        ...keys.map((k) => DropdownMenuItem(
+                              value: k.id,
+                              child: Text(k.label,
+                                  style: const TextStyle(color: Colors.white)),
+                            )),
+                        const DropdownMenuItem(
+                          value: '_generate',
+                          child: Text('Generate new key',
+                              style: TextStyle(color: Colors.blue)),
+                        ),
+                      ],
+                      onChanged: (v) => setSheetState(() => selectedKeyId = v),
+                      decoration: InputDecoration(
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Colors.white24),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Colors.blue),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: bgDark,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style:
+                          ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                      onPressed: () {
+                        final username = usernameCtrl.text.trim();
+                        if (username.isEmpty) return;
+                        Navigator.pop(ctx);
+                        _startSignin(username, selectedKeyId);
+                      },
+                      child: const Text('Sign In',
+                          style: TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _sheetField(TextEditingController ctrl, String hint,
-      {String? Function(String?)? validator}) {
+  Future<void> _startSignin(String username, String? keyId) async {
+    setState(() {
+      _busy = true;
+      _busyMessage = 'Preparing key...';
+    });
+    final keyService = context.read<KeyService>();
+    final api = context.read<RelayApiService>();
+    final storage = context.read<StorageService>();
+    final messenger = ScaffoldMessenger.of(context);
+    final device = _deviceName();
+
+    try {
+      // Get or generate key.
+      SSHKeyPair key;
+      if (keyId == null || keyId == '_generate') {
+        key = await keyService.generate('relay-$device');
+      } else {
+        final keys = await keyService.list();
+        key = keys.firstWhere((k) => k.id == keyId);
+      }
+
+      // Send device request.
+      if (mounted) setState(() => _busyMessage = 'Sending request...');
+      final requestId = await api.deviceRequest(
+        username: username,
+        pubkey: key.publicKeyOpenSSH,
+        device: device,
+      );
+
+      // Poll for approval.
+      if (mounted) setState(() => _busyMessage = 'Check your email — waiting for approval...');
+      final approvedUsername = await _pollForApproval(api, requestId);
+      if (approvedUsername == null) {
+        if (mounted) {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('Request expired or not approved')),
+          );
+        }
+        return;
+      }
+
+      // Fetch account details.
+      final status = await api.getStatus(approvedUsername);
+      await storage.saveAccount(status.account);
+      await _loadAccount();
+      if (mounted) {
+        context.read<DiscoveryService>().refresh();
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Signed in successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Sign in failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() { _busy = false; _busyMessage = null; });
+    }
+  }
+
+  /// Poll for device request approval. Returns username on success, null on timeout.
+  Future<String?> _pollForApproval(RelayApiService api, String requestId) async {
+    // Poll every 3 seconds for up to 15 minutes.
+    for (var i = 0; i < 300; i++) {
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return null;
+      try {
+        final username = await api.getDeviceRequestStatus(requestId);
+        if (username != null) return username;
+      } catch (_) {
+        return null; // Request expired.
+      }
+    }
+    return null;
+  }
+
+  Widget _sheetField(TextEditingController ctrl, String hint) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: ctrl,
         style: const TextStyle(color: Colors.white),
-        validator: validator,
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.white38),
@@ -342,159 +427,6 @@ class _AccountViewState extends State<AccountView> {
         ),
       ),
     );
-  }
-
-  Future<void> _performSignup(
-      String username, String email, String device) async {
-    setState(() => _busy = true);
-    final keyService = context.read<KeyService>();
-    final api = context.read<RelayApiService>();
-    final storage = context.read<StorageService>();
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final key = await keyService.generate('relay-$device');
-      await api.signup(
-        username: username,
-        email: email,
-        pubkey: key.publicKeyOpenSSH,
-        device: device,
-      );
-      await storage.saveAccount(UnixShellsAccount(
-        username: username,
-        email: email,
-      ));
-      await _loadAccount();
-      if (mounted) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Account created')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('Signup failed: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _requestMagicLink(String email) async {
-    setState(() => _busy = true);
-    final api = context.read<RelayApiService>();
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      await api.requestMagicLink(email);
-      if (mounted) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Magic link sent — check your email')),
-        );
-        _showTokenDialog(email);
-      }
-    } catch (e) {
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  void _showTokenDialog(String email) {
-    final tokenCtrl = TextEditingController();
-    final deviceCtrl = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: bgCard,
-        title: const Text('Enter Token',
-            style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Paste the token from the magic link email.',
-              style: TextStyle(color: Colors.white54, fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: tokenCtrl,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                hintText: 'Token',
-                hintStyle: TextStyle(color: Colors.white38),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: deviceCtrl,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                hintText: 'Device name (e.g. iphone)',
-                hintStyle: TextStyle(color: Colors.white38),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _completeSignin(
-                email,
-                tokenCtrl.text.trim(),
-                deviceCtrl.text.trim(),
-              );
-            },
-            child: const Text('Sign In'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _completeSignin(
-      String email, String token, String device) async {
-    if (token.isEmpty || device.isEmpty) return;
-    setState(() => _busy = true);
-    final keyService = context.read<KeyService>();
-    final api = context.read<RelayApiService>();
-    final storage = context.read<StorageService>();
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final key = await keyService.generate('relay-$device');
-      final username = await api.addKey(
-        token: token,
-        pubkey: key.publicKeyOpenSSH,
-        device: device,
-      );
-      await storage.saveAccount(UnixShellsAccount(
-        username: username,
-        email: email,
-      ));
-      await _loadAccount();
-      if (mounted) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Signed in successfully')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('Sign in failed: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
   }
 
   Future<void> _signOut() async {
@@ -520,20 +452,10 @@ class _AccountViewState extends State<AccountView> {
     );
     if (confirmed != true) return;
     await storage.deleteAccount();
+    if (mounted) context.read<DiscoveryService>().refresh();
     setState(() {
       _account = null;
       _devices = [];
     });
-  }
-
-  String? _required(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Required';
-    return null;
-  }
-
-  String? _validateEmail(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Required';
-    if (!v.contains('@') || !v.contains('.')) return 'Invalid email';
-    return null;
   }
 }

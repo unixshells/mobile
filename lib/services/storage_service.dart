@@ -176,6 +176,19 @@ class StorageService {
     return await _secureStorage.read(key: 'setting_$key');
   }
 
+  // Device preferences (for discovered devices).
+
+  Future<void> saveDevicePrefs(String username, String device, Map<String, dynamic> prefs) async {
+    await _secureStorage.write(
+        key: 'devicepref_$username:$device', value: jsonEncode(prefs));
+  }
+
+  Future<Map<String, dynamic>> getDevicePrefs(String username, String device) async {
+    final raw = await _secureStorage.read(key: 'devicepref_$username:$device');
+    if (raw == null) return {};
+    return jsonDecode(raw) as Map<String, dynamic>;
+  }
+
   // Unix Shells account.
 
   Future<void> saveAccount(UnixShellsAccount account) async {

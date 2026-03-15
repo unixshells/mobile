@@ -30,6 +30,7 @@ class ActiveSession {
   StreamSubscription<Uint8List>? _moshIncomingSub;
   StreamSubscription<Uint8List>? _moshPassthroughSub;
   bool ended = false;
+  void Function()? onEnded;
 
   bool get isMosh => moshSession != null;
 
@@ -89,6 +90,7 @@ class ActiveSession {
     if (ended) return;
     ended = true;
     terminal.write('\r\n\x1b[90m[Session ended. Close tab to disconnect.]\x1b[0m\r\n');
+    onEnded?.call();
   }
 
   void close() {

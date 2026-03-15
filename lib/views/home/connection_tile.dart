@@ -8,6 +8,7 @@ class ConnectionTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
+  final Widget? trailing;
 
   const ConnectionTile({
     super.key,
@@ -15,6 +16,7 @@ class ConnectionTile extends StatelessWidget {
     required this.onTap,
     required this.onDelete,
     required this.onEdit,
+    this.trailing,
   });
 
   @override
@@ -41,7 +43,14 @@ class ConnectionTile extends StatelessWidget {
             : connection.destination,
         style: const TextStyle(color: Colors.white38, fontSize: 13),
       ),
-      trailing: PopupMenuButton<String>(
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (trailing != null) ...[
+            trailing!,
+            const SizedBox(width: 8),
+          ],
+          PopupMenuButton<String>(
         icon: const Icon(Icons.more_vert, color: Colors.white38),
         color: bgCard,
         onSelected: (value) {
@@ -60,6 +69,8 @@ class ConnectionTile extends StatelessWidget {
           const PopupMenuItem(
             value: 'delete',
             child: Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
           ),
         ],
       ),

@@ -145,6 +145,7 @@ void main() {
       final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
+      session.startListening();
 
       String? endedSessionId;
       bridge.onSessionEnded = (id) => endedSessionId = id;
@@ -164,6 +165,7 @@ void main() {
       final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
+      session.startListening();
 
       String? endedSessionId;
       bridge.onSessionEnded = (id) => endedSessionId = id;
@@ -186,6 +188,7 @@ void main() {
       final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
+      session.startListening();
 
       bridge.attach(session);
 
@@ -207,6 +210,7 @@ void main() {
       final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
+      session.startListening();
 
       var endedCount = 0;
       bridge.onSessionEnded = (_) => endedCount++;

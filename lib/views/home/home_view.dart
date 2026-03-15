@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/connection.dart';
+import '../../models/device.dart';
+import '../../services/discovery_service.dart';
+import '../../services/key_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/storage_service.dart';
 import '../../util/constants.dart';
@@ -196,7 +199,7 @@ class _HomeViewState extends State<HomeView>
               controller: _tabController,
               children: [
                 _buildConnectionList(_filter(_connections)),
-                _buildConnectionList(_filter(_relayConnections)),
+                _buildUnixShellsTab(),
                 _buildSessionList(),
               ],
             ),
@@ -210,6 +213,268 @@ class _HomeViewState extends State<HomeView>
         },
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  Future<Connection> _buildDeviceConnection(Device device) async {
+    final storage = context.read<StorageService>();
+    final account = await storage.getAccount();
+    if (account == null) throw Exception('not signed in');
+    final keyService = context.read<KeyService>();
+    final keys = await keyService.list();
+    final prefs = await storage.getDevicePrefs(account.username, device.name);
+    return Connection(
+      id: 'discovered_${device.name}',
+      label: device.name,
+      type: ConnectionType.relay,
+      host: '',
+      username: account.username,
+      authMethod: AuthMethod.key,
+      keyId: prefs['keyId'] as String? ?? (keys.isNotEmpty ? keys.first.id : null),
+      relayUsername: account.username,
+      relayDevice: device.name,
+      useMosh: prefs['useMosh'] as bool? ?? false,
+      sessionName: prefs['sessionName'] as String?,
+    );
+  }
+
+  Future<void> _connectToDevice(Device device) async {
+    final conn = await _buildDeviceConnection(device);
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TerminalPage(pendingConnection: conn),
+      ),
+    );
+  }
+
+  Future<void> _editDevicePrefs(Device device) async {
+    final storage = context.read<StorageService>();
+    final account = await storage.getAccount();
+    if (account == null) return;
+    final keyService = context.read<KeyService>();
+    final keys = await keyService.list();
+    final prefs = await storage.getDevicePrefs(account.username, device.name);
+
+    var useMosh = prefs['useMosh'] as bool? ?? false;
+    var sessionName = prefs['sessionName'] as String? ?? '';
+    var keyId = prefs['keyId'] as String? ?? (keys.isNotEmpty ? keys.first.id : null);
+    final sessionCtrl = TextEditingController(text: sessionName);
+
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: bgCard,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: 24, right: 24, top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(device.name,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Use Mosh',
+                    style: TextStyle(color: Colors.white)),
+                value: useMosh,
+                onChanged: (v) => setSheetState(() => useMosh = v),
+              ),
+              TextField(
+                controller: sessionCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: 'Session Name',
+                  labelStyle: const TextStyle(color: Colors.white54),
+                  hintText: 'default',
+                  hintStyle: const TextStyle(color: Colors.white24),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.white24),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.blue),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: bgDark,
+                ),
+              ),
+              if (keys.length > 1) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: keyId,
+                  dropdownColor: bgCard,
+                  style: const TextStyle(color: Colors.white),
+                  items: keys.map((k) => DropdownMenuItem(
+                        value: k.id,
+                        child: Text(k.label,
+                            style: const TextStyle(color: Colors.white)),
+                      )).toList(),
+                  onChanged: (v) => setSheetState(() => keyId = v),
+                  decoration: InputDecoration(
+                    labelText: 'SSH Key',
+                    labelStyle: const TextStyle(color: Colors.white54),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.white24),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.blue),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: bgDark,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                  onPressed: () async {
+                    final newPrefs = <String, dynamic>{
+                      'useMosh': useMosh,
+                      'sessionName': sessionCtrl.text.trim(),
+                      if (keyId != null) 'keyId': keyId,
+                    };
+                    await storage.saveDevicePrefs(
+                        account.username, device.name, newPrefs);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  child: const Text('Save',
+                      style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnixShellsTab() {
+    return Consumer<DiscoveryService>(
+      builder: (context, discovery, _) {
+        final online = discovery.onlineDevices;
+        final saved = _filter(_relayConnections);
+        // Filter out saved connections that match an online device.
+        final savedDeviceNames = <String>{};
+        for (final c in saved) {
+          if (c.relayDevice != null) savedDeviceNames.add(c.relayDevice!);
+        }
+        final onlineOnly = online
+            .where((d) => !savedDeviceNames.contains(d.name))
+            .toList();
+
+        if (online.isEmpty && saved.isEmpty) {
+          return RefreshIndicator(
+            onRefresh: () async {
+              await discovery.refresh();
+              await _loadConnections();
+            },
+            child: ListView(
+              children: const [
+                SizedBox(height: 120),
+                Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.cloud_outlined, size: 64, color: Colors.white24),
+                      SizedBox(height: 16),
+                      Text('No devices online',
+                          style: TextStyle(color: Colors.white38, fontSize: 16)),
+                      SizedBox(height: 8),
+                      Text('Sign in and start latch on a machine',
+                          style: TextStyle(color: Colors.white24, fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            await discovery.refresh();
+            await _loadConnections();
+          },
+          child: ListView(
+            children: [
+              if (onlineOnly.isNotEmpty) ...[
+                _tabSectionHeader('Online'),
+                ...onlineOnly.map((device) => ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.green.withValues(alpha: 0.2),
+                        child: const Icon(Icons.circle, color: Colors.green, size: 12),
+                      ),
+                      title: Text(device.name,
+                          style: const TextStyle(color: Colors.white, fontSize: 15)),
+                      subtitle: Text(device.status,
+                          style: const TextStyle(color: Colors.white38, fontSize: 13)),
+                      trailing: PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert, color: Colors.white38),
+                        color: bgCard,
+                        onSelected: (value) {
+                          if (value == 'edit') _editDevicePrefs(device);
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text('Edit', style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                      onTap: () => _connectToDevice(device),
+                    )),
+              ],
+              if (saved.isNotEmpty) ...[
+                if (onlineOnly.isNotEmpty) _tabSectionHeader('Saved'),
+                ...saved.map((conn) {
+                  // Mark saved connections that are online.
+                  final isOnline = online.any((d) => d.name == conn.relayDevice);
+                  return ConnectionTile(
+                    key: ValueKey(conn.id),
+                    connection: conn,
+                    onTap: () => _connect(conn),
+                    onDelete: () => _deleteConnection(conn),
+                    onEdit: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ConnectView(existing: conn),
+                        ),
+                      );
+                      _loadConnections();
+                    },
+                    trailing: isOnline
+                        ? const Icon(Icons.circle, color: Colors.green, size: 8)
+                        : null,
+                  );
+                }),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _tabSectionHeader(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Text(text,
+          style: const TextStyle(
+              color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w600)),
     );
   }
 
