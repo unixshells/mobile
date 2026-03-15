@@ -87,8 +87,15 @@ class MoshService {
 
     // Step 3: Determine UDP target.
     // For relay connections, latch rewrites the MOSH CONNECT line with the
-    // relay's public UDP port. UDP goes to the relay host, not the device.
-    final host = conn.type == ConnectionType.relay ? relayJumpHost : conn.host;
+    // relay's public UDP port. If MOSH IP is present, use that specific
+    // relay address. Otherwise fall back to the geo-routed relay hostname.
+    String host;
+    if (conn.type == ConnectionType.relay) {
+      final ipMatch = RegExp(r'MOSH IP (\S+)').firstMatch(output);
+      host = ipMatch?.group(1) ?? relayJumpHost;
+    } else {
+      host = conn.host;
+    }
     final udpPort = moshPort;
 
     // Step 4: Open UDP socket.
