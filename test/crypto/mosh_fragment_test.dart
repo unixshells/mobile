@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:unixshells/crypto/mosh_fragment.dart';
-import 'package:unixshells/crypto/mosh_pb.dart';
 import 'package:unixshells/crypto/mosh_transport.dart';
 import 'package:unixshells/crypto/ocb.dart';
 

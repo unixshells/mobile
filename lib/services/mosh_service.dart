@@ -12,7 +12,6 @@ import '../crypto/ocb.dart';
 import '../models/connection.dart';
 import '../util/constants.dart';
 import 'mosh_framebuffer.dart';
-import 'relay_api_service.dart';
 import 'ssh_service.dart';
 
 /// Mosh client implementation with full SSP protocol support.
@@ -24,9 +23,8 @@ import 'ssh_service.dart';
 /// 4. Exchange datagrams via SSP transport (protobuf + fragments + OCB3)
 class MoshService {
   final SSHService _sshService;
-  final RelayApiService _api;
 
-  MoshService(this._sshService, this._api);
+  MoshService(this._sshService);
 
   /// Start a mosh session.
   Future<MoshSession> connect(Connection conn) async {

@@ -58,7 +58,7 @@ class _UnixShellsAppState extends State<UnixShellsApp> {
         Provider.value(value: _sshService),
         Provider.value(value: _api),
         ChangeNotifierProvider.value(value: _discovery),
-        ChangeNotifierProvider(create: (_) => SessionManager(_sshService, _api)),
+        ChangeNotifierProvider(create: (_) => SessionManager(_sshService)),
       ],
       child: MaterialApp(
         title: 'Unix Shells',

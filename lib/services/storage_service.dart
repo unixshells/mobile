@@ -14,7 +14,7 @@ class StorageService {
     iOptions: IOSOptions(
       accessibility: KeychainAccessibility.first_unlock,
     ),
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(),
   );
   Database? _db;
 

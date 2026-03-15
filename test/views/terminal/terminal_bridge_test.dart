@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:xterm/xterm.dart';
 
 import 'package:unixshells/models/connection.dart';
 import 'package:unixshells/models/session.dart';

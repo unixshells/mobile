@@ -4,17 +4,15 @@ import 'package:uuid/uuid.dart';
 import '../models/connection.dart';
 import '../models/session.dart';
 import 'mosh_service.dart';
-import 'relay_api_service.dart';
 import 'ssh_service.dart';
 
 class SessionManager extends ChangeNotifier {
   final SSHService _sshService;
-  final RelayApiService _api;
-  late final MoshService _moshService = MoshService(_sshService, _api);
+  late final MoshService _moshService = MoshService(_sshService);
   final List<ActiveSession> _sessions = [];
   int _activeIndex = -1;
 
-  SessionManager(this._sshService, this._api);
+  SessionManager(this._sshService);
 
   /// Add a pre-built session (for testing or external use).
   @visibleForTesting

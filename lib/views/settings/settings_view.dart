@@ -89,6 +89,7 @@ class _SettingsViewState extends State<SettingsView> {
       if (bytes == null) return;
       final json = String.fromCharCodes(bytes);
 
+      if (!mounted) return;
       final merge = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -355,35 +356,6 @@ class _SettingsViewState extends State<SettingsView> {
               color: Colors.white54,
               fontSize: 13,
               fontWeight: FontWeight.w600)),
-    );
-  }
-
-  Widget _buildField(
-    TextEditingController ctrl,
-    String label,
-    String hint, {
-    void Function(String)? onSubmitted,
-  }) {
-    return TextField(
-      controller: ctrl,
-      style: const TextStyle(color: Colors.white),
-      onSubmitted: onSubmitted,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white54),
-        hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white24),
-        enabledBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.white24),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.blue),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        filled: true,
-        fillColor: bgCard,
-      ),
     );
   }
 

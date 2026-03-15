@@ -206,9 +206,9 @@ class _HomeViewState extends State<HomeView>
 
   Future<Connection> _buildDeviceConnection(Device device) async {
     final storage = context.read<StorageService>();
+    final keyService = context.read<KeyService>();
     final account = await storage.getAccount();
     if (account == null) throw Exception('not signed in');
-    final keyService = context.read<KeyService>();
     final keys = await keyService.list();
     final prefs = await storage.getDevicePrefs(account.username, device.name);
     return Connection(
@@ -238,9 +238,9 @@ class _HomeViewState extends State<HomeView>
 
   Future<void> _editDevicePrefs(Device device) async {
     final storage = context.read<StorageService>();
+    final keyService = context.read<KeyService>();
     final account = await storage.getAccount();
     if (account == null) return;
-    final keyService = context.read<KeyService>();
     final keys = await keyService.list();
     final prefs = await storage.getDevicePrefs(account.username, device.name);
 
@@ -300,7 +300,7 @@ class _HomeViewState extends State<HomeView>
               if (keys.length > 1) ...[
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: keyId,
+                  initialValue: keyId,
                   dropdownColor: bgCard,
                   style: const TextStyle(color: Colors.white),
                   items: keys.map((k) => DropdownMenuItem(

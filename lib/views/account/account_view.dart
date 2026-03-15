@@ -272,7 +272,7 @@ class _AccountViewState extends State<AccountView> {
                         style: TextStyle(color: Colors.white54, fontSize: 12)),
                     const SizedBox(height: 4),
                     DropdownButtonFormField<String>(
-                      value: selectedKeyId,
+                      initialValue: selectedKeyId,
                       dropdownColor: bgCard,
                       style: const TextStyle(color: Colors.white),
                       items: [

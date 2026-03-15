@@ -1,20 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unixshells/models/connection.dart';
-import 'package:unixshells/services/relay_api_service.dart';
 import 'package:unixshells/services/session_manager.dart';
 import 'package:unixshells/services/ssh_service.dart';
 
 void main() {
   group('SessionManager', () {
     test('starts empty with index -1', () {
-      final m = SessionManager(_FakeSSHService(), _FakeRelayApi());
+      final m = SessionManager(_FakeSSHService());
       expect(m.sessions, isEmpty);
       expect(m.activeIndex, -1);
       expect(m.activeSession, isNull);
     });
 
     test('switchTo ignores invalid indices when empty', () {
-      final m = SessionManager(_FakeSSHService(), _FakeRelayApi());
+      final m = SessionManager(_FakeSSHService());
       m.switchTo(0);
       expect(m.activeIndex, -1);
       m.switchTo(-1);
@@ -22,26 +21,26 @@ void main() {
     });
 
     test('disconnect nonexistent id is no-op', () {
-      final m = SessionManager(_FakeSSHService(), _FakeRelayApi());
+      final m = SessionManager(_FakeSSHService());
       m.disconnect('nope');
       expect(m.sessions, isEmpty);
       expect(m.activeIndex, -1);
     });
 
     test('disconnectAll on empty is safe', () {
-      final m = SessionManager(_FakeSSHService(), _FakeRelayApi());
+      final m = SessionManager(_FakeSSHService());
       m.disconnectAll();
       expect(m.sessions, isEmpty);
       expect(m.activeIndex, -1);
     });
 
     test('sessions list is unmodifiable', () {
-      final m = SessionManager(_FakeSSHService(), _FakeRelayApi());
+      final m = SessionManager(_FakeSSHService());
       expect(() => (m.sessions as List).add(null), throwsA(anything));
     });
 
     test('notifies listeners on switchTo', () {
-      final m = SessionManager(_FakeSSHService(), _FakeRelayApi());
+      final m = SessionManager(_FakeSSHService());
       // switchTo with invalid index should not notify.
       var count = 0;
       m.addListener(() => count++);
@@ -93,5 +92,3 @@ void main() {
 }
 
 class _FakeSSHService extends Fake implements SSHService {}
-
-class _FakeRelayApi extends Fake implements RelayApiService {}
