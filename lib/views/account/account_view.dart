@@ -371,6 +371,7 @@ class _AccountViewState extends State<AccountView> {
       // Fetch account details.
       final status = await api.getStatus(approvedUsername);
       await storage.saveAccount(status.account);
+      await storage.saveSetting('relay_key_id', key.id);
       await _loadAccount();
       if (mounted) {
         context.read<DiscoveryService>().refresh();

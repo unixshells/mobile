@@ -22,12 +22,21 @@ class DiscoveryService extends ChangeNotifier {
   bool get loading => _loading;
 
   /// Sign a timestamp with the relay key for auth.
+  /// Uses the key saved during sign-in, falling back to any relay-* key.
   Future<String?> _getAuthToken() async {
     final keys = await _keyService.list();
-    final relayKey = keys.where((k) => k.label.startsWith('relay-')).firstOrNull;
-    if (relayKey == null) return null;
+    if (keys.isEmpty) return null;
 
-    final identities = await _keyService.loadIdentity(relayKey.id);
+    // Prefer the key used during sign-in.
+    final savedKeyId = await _storage.getSetting('relay_key_id');
+    var key = savedKeyId != null
+        ? keys.where((k) => k.id == savedKeyId).firstOrNull
+        : null;
+    // Fall back to any relay-prefixed key.
+    key ??= keys.where((k) => k.label.startsWith('relay-')).firstOrNull;
+    if (key == null) return null;
+
+    final identities = await _keyService.loadIdentity(key.id);
     if (identities.isEmpty) return null;
 
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
