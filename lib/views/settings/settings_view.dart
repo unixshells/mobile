@@ -20,7 +20,6 @@ class SettingsView extends StatefulWidget {
 }
 
 class _SettingsViewState extends State<SettingsView> {
-  final _relayHostCtrl = TextEditingController();
   bool _loaded = false;
   String _selectedTheme = 'default';
   double _fontSize = 14;
@@ -46,29 +45,17 @@ class _SettingsViewState extends State<SettingsView> {
 
   Future<void> _load() async {
     final storage = context.read<StorageService>();
-    final host = await storage.getSetting('relay_host');
     final theme = await storage.getSetting('theme');
     final fontSize = await storage.getSetting('font_size');
     final fontFamily = await storage.getSetting('font_family');
     final syncEnabled = await storage.getSetting('sync_enabled');
     final lastSync = await storage.getSetting('last_sync');
-    _relayHostCtrl.text = host ?? '';
     _selectedTheme = theme ?? 'default';
     _fontSize = double.tryParse(fontSize ?? '') ?? 14;
     _fontFamily = fontFamily ?? 'monospace';
     _syncEnabled = syncEnabled == 'true';
     _lastSync = lastSync;
     setState(() => _loaded = true);
-  }
-
-  Future<void> _saveRelayHost() async {
-    final storage = context.read<StorageService>();
-    await storage.saveSetting('relay_host', _relayHostCtrl.text.trim());
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Saved')),
-      );
-    }
   }
 
   Future<void> _saveSetting(String key, String value) async {
@@ -78,7 +65,7 @@ class _SettingsViewState extends State<SettingsView> {
 
   SyncService get _syncService => SyncService(
         context.read<StorageService>(),
-        RelayApiService.fromHost(host: _relayHostCtrl.text.trim()),
+        RelayApiService(),
         context.read<KeyService>(),
       );
 
@@ -216,20 +203,6 @@ class _SettingsViewState extends State<SettingsView> {
                 _buildFontSizeSlider(),
                 const SizedBox(height: 12),
                 _buildFontFamilyPicker(),
-
-                const SizedBox(height: 24),
-                _sectionHeader('Relay'),
-                _buildField(
-                  _relayHostCtrl,
-                  'Relay Host',
-                  'unixshells.com',
-                  onSubmitted: (_) => _saveRelayHost(),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Leave empty to use the default (unixshells.com).',
-                  style: TextStyle(color: Colors.white38, fontSize: 12),
-                ),
 
                 const SizedBox(height: 24),
                 _sectionHeader('Cloud Sync'),
@@ -507,7 +480,6 @@ class _SettingsViewState extends State<SettingsView> {
 
   @override
   void dispose() {
-    _relayHostCtrl.dispose();
     super.dispose();
   }
 }
