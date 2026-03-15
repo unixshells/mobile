@@ -59,6 +59,7 @@ class FakeStdinSink extends Fake implements StreamSink<Uint8List> {
 
 class FakeMoshSession extends Fake implements MoshSession {
   final _incomingController = StreamController<Uint8List>.broadcast();
+  final _passthroughController = StreamController<Uint8List>.broadcast();
   int resizeCalls = 0;
   int lastResizeWidth = 0;
   int lastResizeHeight = 0;
@@ -66,6 +67,24 @@ class FakeMoshSession extends Fake implements MoshSession {
 
   @override
   Stream<Uint8List> get incoming => _incomingController.stream;
+
+  @override
+  Stream<Uint8List> get passthroughEscapes => _passthroughController.stream;
+
+  @override
+  String? get motd => null;
+
+  @override
+  bool get started => true;
+
+  @override
+  void start() {}
+
+  @override
+  void resetDisplay() {}
+
+  @override
+  String? getLatestRedraw() => null;
 
   @override
   void sendResize(int width, int height) {
@@ -82,6 +101,7 @@ class FakeMoshSession extends Fake implements MoshSession {
   @override
   void close() {
     _incomingController.close();
+    _passthroughController.close();
   }
 
   void emitIncoming(String text) {
@@ -114,8 +134,7 @@ ActiveSession _makeMoshSession(FakeMoshSession mosh) => ActiveSession(
 void main() {
   group('checkAlive on ended session', () {
     test('does nothing when session already ended (SSH)', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSSHSession(shell);
 
@@ -136,8 +155,7 @@ void main() {
     });
 
     test('does nothing when session already ended (Mosh)', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final mosh = FakeMoshSession();
       final session = _makeMoshSession(mosh);
 
@@ -160,8 +178,7 @@ void main() {
 
   group('checkAlive with null session', () {
     test('does nothing when no session is attached', () {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
 
       // No attach call -- session is null.
       // checkAlive should return silently without throwing.
@@ -171,8 +188,7 @@ void main() {
     });
 
     test('does nothing after detach', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSSHSession(shell);
 
@@ -189,8 +205,7 @@ void main() {
 
   group('_showDisconnected writes disconnect message', () {
     test('writes disconnect text when stdin.add throws (broken pipe)', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = _ThrowingSSHSession();
       final session = ActiveSession(
         id: 'broken-pipe',
@@ -214,8 +229,7 @@ void main() {
     });
 
     test('onSessionEnded receives correct session id', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = _ThrowingSSHSession();
       final session = ActiveSession(
         id: 'specific-id-42',
@@ -239,8 +253,7 @@ void main() {
 
   group('_showDisconnected only fires once', () {
     test('calling checkAlive twice does not duplicate disconnect', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = _ThrowingSSHSession();
       final session = ActiveSession(
         id: 'dup-test',
@@ -267,8 +280,7 @@ void main() {
     });
 
     test('_showEnded + checkAlive does not duplicate', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSSHSession(shell);
 
@@ -292,8 +304,7 @@ void main() {
 
   group('syncDimensions routes to mosh', () {
     test('calls moshSession.sendResize when session is mosh', () {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final mosh = FakeMoshSession();
       final session = _makeMoshSession(mosh);
 
@@ -304,10 +315,10 @@ void main() {
 
       // Terminal has default dimensions (80x24 or similar).
       // As long as cols > 0 and rows > 0, sendResize should be called.
-      if (terminal.viewWidth > 0 && terminal.viewHeight > 0) {
+      if (session.terminal.viewWidth > 0 && session.terminal.viewHeight > 0) {
         expect(mosh.resizeCalls, equals(1));
-        expect(mosh.lastResizeWidth, equals(terminal.viewWidth));
-        expect(mosh.lastResizeHeight, equals(terminal.viewHeight));
+        expect(mosh.lastResizeWidth, equals(session.terminal.viewWidth));
+        expect(mosh.lastResizeHeight, equals(session.terminal.viewHeight));
       }
 
       bridge.dispose();
@@ -316,8 +327,7 @@ void main() {
     test('does not call shell.resizeTerminal when session is mosh', () {
       // Mosh sessions have no shell, so there's nothing to accidentally call.
       // This test verifies the routing is correct by confirming mosh is used.
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final mosh = FakeMoshSession();
       final session = _makeMoshSession(mosh);
 
@@ -336,8 +346,7 @@ void main() {
 
   group('handleResize routes to mosh', () {
     test('calls moshSession.sendResize for mosh session', () {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final mosh = FakeMoshSession();
       final session = _makeMoshSession(mosh);
 
@@ -354,8 +363,7 @@ void main() {
     });
 
     test('does not call shell.resizeTerminal for mosh session', () {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final mosh = FakeMoshSession();
       final session = _makeMoshSession(mosh);
 
@@ -373,8 +381,7 @@ void main() {
 
   group('syncDimensions routes to SSH', () {
     test('calls shell.resizeTerminal for SSH session', () {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSSHSession(shell);
 
@@ -383,18 +390,17 @@ void main() {
 
       bridge.syncDimensions();
 
-      if (terminal.viewWidth > 0 && terminal.viewHeight > 0) {
+      if (session.terminal.viewWidth > 0 && session.terminal.viewHeight > 0) {
         expect(shell.resizeCalls, equals(1));
-        expect(shell.lastResizeWidth, equals(terminal.viewWidth));
-        expect(shell.lastResizeHeight, equals(terminal.viewHeight));
+        expect(shell.lastResizeWidth, equals(session.terminal.viewWidth));
+        expect(shell.lastResizeHeight, equals(session.terminal.viewHeight));
       }
 
       bridge.dispose();
     });
 
     test('handleResize calls shell.resizeTerminal for SSH session', () {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSSHSession(shell);
 
@@ -411,8 +417,7 @@ void main() {
     });
 
     test('does not call mosh sendResize for SSH session', () {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSSHSession(shell);
 

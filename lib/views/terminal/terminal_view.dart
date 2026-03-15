@@ -24,7 +24,6 @@ class TerminalPage extends StatefulWidget {
 
 class _TerminalPageState extends State<TerminalPage>
     with WidgetsBindingObserver {
-  late xterm.Terminal _terminal;
   late TerminalBridge _bridge;
   final _termController = xterm.TerminalController();
   bool _showExtraKeys = true;
@@ -35,22 +34,28 @@ class _TerminalPageState extends State<TerminalPage>
   final _searchCtrl = TextEditingController();
   final _searchHighlights = <xterm.TerminalHighlight>[];
 
+  /// Temporary terminal used only during the "Connecting..." phase
+  /// before a session exists.
+  xterm.Terminal? _connectingTerminal;
+
   String _themeId = 'default';
   double _fontSize = 14;
   String _fontFamily = 'monospace';
+
+  /// The terminal currently being displayed.
+  xterm.Terminal get _activeTerminal {
+    final manager = context.read<SessionManager>();
+    return manager.activeSession?.terminal ?? _connectingTerminal!;
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _terminal = xterm.Terminal(maxLines: 10000);
-    _bridge = TerminalBridge(_terminal);
+    _bridge = TerminalBridge();
     _bridge.onDisconnect = _handleDisconnect;
     _bridge.onSessionEnded = _handleSessionEnded;
-
-    _terminal.onResize = (cols, rows, pixelWidth, pixelHeight) {
-      _bridge.handleResize(cols, rows);
-    };
+    _bridge.outputInterceptor = _interceptCtrl;
 
     _loadSettings();
 
@@ -62,11 +67,12 @@ class _TerminalPageState extends State<TerminalPage>
   }
 
   Future<void> _connectPending(Connection conn) async {
+    _connectingTerminal = xterm.Terminal(maxLines: 10000);
     setState(() {
       _connecting = true;
       _connectError = null;
     });
-    _terminal.write('Connecting to ${conn.label}...\r\n');
+    _connectingTerminal!.write('Connecting to ${conn.label}...\r\n');
 
     try {
       final manager = context.read<SessionManager>();
@@ -74,6 +80,7 @@ class _TerminalPageState extends State<TerminalPage>
       await manager.connect(conn);
       await storage.updateLastConnected(conn.id);
       if (!mounted) return;
+      _connectingTerminal = null;
       setState(() => _connecting = false);
       _attachCurrentSession();
     } catch (e) {
@@ -83,7 +90,7 @@ class _TerminalPageState extends State<TerminalPage>
         _connecting = false;
         _connectError = msg;
       });
-      _terminal.write('\x1b[31mConnection failed: $msg\x1b[0m\r\n');
+      _connectingTerminal?.write('\x1b[31mConnection failed: $msg\x1b[0m\r\n');
     }
   }
 
@@ -128,14 +135,11 @@ class _TerminalPageState extends State<TerminalPage>
     if (manager.sessions.isEmpty) {
       Navigator.of(context).pop();
     } else if (manager.activeSession != null) {
-      _bridge.clear();
-      _bridge.attach(manager.activeSession!);
+      _switchToSession(manager.activeSession!);
     }
   }
 
   void _handleSessionEnded(String sessionId) {
-    // Session exited gracefully — just refresh the UI.
-    // User closes the tab via the X button which calls _handleDisconnect.
     if (!mounted) return;
     setState(() {});
   }
@@ -144,10 +148,30 @@ class _TerminalPageState extends State<TerminalPage>
     final manager = context.read<SessionManager>();
     final session = manager.activeSession;
     if (session == null) return;
+    _switchToSession(session);
+  }
+
+  void _switchToSession(dynamic session) {
     _bridge.attach(session);
+    session.terminal.onResize = (cols, rows, pixelWidth, pixelHeight) {
+      _bridge.handleResize(cols, rows);
+    };
+    setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _bridge.syncDimensions();
     });
+  }
+
+  /// Intercept soft keyboard output when Ctrl modifier is active.
+  String _interceptCtrl(String data) {
+    if (_ctrlActive && data.length == 1) {
+      final code = data.codeUnitAt(0);
+      if (code >= 0x40 && code <= 0x7e) {
+        setState(() => _ctrlActive = false);
+        return String.fromCharCode(code & 0x1f);
+      }
+    }
+    return data;
   }
 
   @override
@@ -194,7 +218,7 @@ class _TerminalPageState extends State<TerminalPage>
       backgroundColor: bgDark,
       body: SafeArea(
         child: PrefixDrawer(
-          onSend: (sequence) => _terminal.textInput(sequence),
+          onSend: (sequence) => _activeTerminal.textInput(sequence),
           child: Column(
             children: [
               if (_connecting || _connectError != null)
@@ -203,23 +227,34 @@ class _TerminalPageState extends State<TerminalPage>
                 _buildSessionTabs(),
               if (_showSearch) _buildSearchBar(),
               Expanded(
-                child: xterm.TerminalView(
-                  _terminal,
-                  controller: _termController,
-                  theme: _buildXtermTheme(),
-                  textStyle: xterm.TerminalStyle(
-                    fontSize: _fontSize,
-                    fontFamily: _fontFamily,
-                  ),
-                  autofocus: !_connecting,
-                  deleteDetection: true,
-                ),
+                child: _buildTerminalView(),
               ),
               if (_showExtraKeys && !_connecting) _buildExtraKeys(),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTerminalView() {
+    final term = _connectingTerminal ?? context.read<SessionManager>().activeSession?.terminal;
+    if (term == null) {
+      return const Center(
+        child: Text('No active session', style: TextStyle(color: Colors.white38)),
+      );
+    }
+    return xterm.TerminalView(
+      term,
+      key: ValueKey(term.hashCode),
+      controller: _termController,
+      theme: _buildXtermTheme(),
+      textStyle: xterm.TerminalStyle(
+        fontSize: _fontSize,
+        fontFamily: _fontFamily,
+      ),
+      autofocus: !_connecting,
+      deleteDetection: true,
     );
   }
 
@@ -277,8 +312,7 @@ class _TerminalPageState extends State<TerminalPage>
                     return GestureDetector(
                       onTap: () {
                         manager.switchTo(i);
-                        _bridge.clear();
-                        _bridge.attach(session);
+                        _switchToSession(session);
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -414,7 +448,8 @@ class _TerminalPageState extends State<TerminalPage>
       return;
     }
 
-    final buffer = _terminal.buffer;
+    final term = _activeTerminal;
+    final buffer = term.buffer;
     for (var row = 0; row < buffer.lines.length; row++) {
       final line = buffer.lines[row];
       final text = line.getText();
@@ -487,12 +522,13 @@ class _TerminalPageState extends State<TerminalPage>
             return;
           }
           if (sequence != null) {
+            final term = _activeTerminal;
             if (_ctrlActive && sequence.length == 1) {
               final code = sequence.codeUnitAt(0) & 0x1f;
-              _terminal.textInput(String.fromCharCode(code));
+              term.textInput(String.fromCharCode(code));
               setState(() => _ctrlActive = false);
             } else {
-              _terminal.textInput(sequence);
+              term.textInput(sequence);
             }
           }
         },

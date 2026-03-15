@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/connection.dart';
+import '../../services/session_manager.dart';
 import '../../services/storage_service.dart';
 import '../../util/constants.dart';
 import '../connect/connect_view.dart';
-import '../account/account_view.dart';
 import '../keys/key_list_view.dart';
 import '../local/local_terminal_view.dart';
 import '../settings/settings_view.dart';
@@ -32,7 +32,7 @@ class _HomeViewState extends State<HomeView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadConnections();
   }
 
@@ -64,6 +64,16 @@ class _HomeViewState extends State<HomeView>
       MaterialPageRoute(
         builder: (_) => TerminalPage(pendingConnection: conn),
       ),
+    );
+  }
+
+  void _returnToTerminals([int? sessionIndex]) {
+    if (sessionIndex != null) {
+      final manager = context.read<SessionManager>();
+      manager.switchTo(sessionIndex);
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const TerminalPage()),
     );
   }
 
@@ -134,9 +144,17 @@ class _HomeViewState extends State<HomeView>
           indicatorColor: Colors.blue,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white54,
-          tabs: const [
-            Tab(text: 'All'),
-            Tab(text: 'Unix Shells'),
+          tabs: [
+            const Tab(text: 'All'),
+            const Tab(text: 'Unix Shells'),
+            Consumer<SessionManager>(
+              builder: (context, manager, _) {
+                final count = manager.sessions.length;
+                return Tab(
+                  text: count > 0 ? 'Sessions ($count)' : 'Sessions',
+                );
+              },
+            ),
           ],
         ),
         actions: [
@@ -165,12 +183,6 @@ class _HomeViewState extends State<HomeView>
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AccountView()),
-            ),
-          ),
-          IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SettingsView()),
@@ -185,6 +197,7 @@ class _HomeViewState extends State<HomeView>
               children: [
                 _buildConnectionList(_filter(_connections)),
                 _buildConnectionList(_filter(_relayConnections)),
+                _buildSessionList(),
               ],
             ),
       floatingActionButton: FloatingActionButton(
@@ -197,6 +210,71 @@ class _HomeViewState extends State<HomeView>
         },
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  Widget _buildSessionList() {
+    return Consumer<SessionManager>(
+      builder: (context, manager, _) {
+        if (manager.sessions.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.terminal, size: 64, color: Colors.white24),
+                SizedBox(height: 16),
+                Text(
+                  'No active sessions',
+                  style: TextStyle(color: Colors.white38, fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Connect to a server to start one',
+                  style: TextStyle(color: Colors.white24, fontSize: 14),
+                ),
+              ],
+            ),
+          );
+        }
+        return ListView.builder(
+          itemCount: manager.sessions.length,
+          itemBuilder: (context, i) {
+            final session = manager.sessions[i];
+            final isRelay = session.connection.type == ConnectionType.relay;
+            final duration = DateTime.now().difference(session.createdAt);
+            String elapsed;
+            if (duration.inHours > 0) {
+              elapsed = '${duration.inHours}h ${duration.inMinutes % 60}m';
+            } else if (duration.inMinutes > 0) {
+              elapsed = '${duration.inMinutes}m';
+            } else {
+              elapsed = 'just now';
+            }
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundColor:
+                    isRelay ? Colors.blue.withValues(alpha: 0.2) : bgButton,
+                child: Icon(
+                  isRelay ? Icons.cloud : Icons.computer,
+                  color: isRelay ? Colors.blue : Colors.white54,
+                  size: 20,
+                ),
+              ),
+              title: Text(
+                session.label,
+                style: const TextStyle(color: Colors.white, fontSize: 15),
+              ),
+              subtitle: Text(
+                '${session.connection.destination} · $elapsed',
+                style: const TextStyle(color: Colors.white38, fontSize: 13),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios,
+                  size: 14, color: Colors.white24),
+              onTap: () => _returnToTerminals(i),
+            );
+          },
+        );
+      },
     );
   }
 

@@ -70,8 +70,7 @@ ActiveSession _makeSession(FakeSSHSession shell) {
 void main() {
   group('TerminalBridge attach', () {
     test('sets up output listener that writes to terminal', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
 
@@ -89,15 +88,14 @@ void main() {
     });
 
     test('terminal input is forwarded to shell stdin', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
 
       bridge.attach(session);
 
       // Simulate terminal user typing.
-      terminal.onOutput?.call('ls\n');
+      session.terminal.onOutput?.call('ls\n');
 
       final stdinSink = shell.stdin as _FakeStdinSink;
       expect(stdinSink.written.length, equals(1));
@@ -110,8 +108,7 @@ void main() {
 
   group('TerminalBridge detach', () {
     test('cancels subscription and clears session', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
 
@@ -123,15 +120,14 @@ void main() {
       await Future.delayed(Duration.zero);
 
       // Input should be ignored (onOutput is null after detach).
-      expect(terminal.onOutput, isNull);
+      expect(session.terminal.onOutput, isNull);
 
       bridge.dispose();
       await shell.closeStdout();
     });
 
     test('double detach is safe', () {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
 
@@ -139,15 +135,14 @@ void main() {
       bridge.detach();
       bridge.detach(); // Should not throw.
 
-      expect(terminal.onOutput, isNull);
+      expect(session.terminal.onOutput, isNull);
       bridge.dispose();
     });
   });
 
   group('TerminalBridge onSessionEnded', () {
     test('fires when stdout stream closes', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
 
@@ -166,8 +161,7 @@ void main() {
     });
 
     test('fires when stdout stream errors', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
 
@@ -189,8 +183,7 @@ void main() {
 
   group('TerminalBridge input after session ends', () {
     test('input is ignored after session ends (_ended flag)', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
 
@@ -202,7 +195,7 @@ void main() {
 
       // Try to send input. The onOutput callback should still be set
       // but should silently drop input because _ended is true.
-      terminal.onOutput?.call('should be ignored');
+      session.terminal.onOutput?.call('should be ignored');
 
       final stdinSink = shell.stdin as _FakeStdinSink;
       expect(stdinSink.written, isEmpty);
@@ -211,8 +204,7 @@ void main() {
     });
 
     test('onSessionEnded fires only once for multiple close signals', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
 
@@ -234,20 +226,18 @@ void main() {
 
   group('TerminalBridge dispose', () {
     test('dispose calls detach', () {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
       final shell = FakeSSHSession();
       final session = _makeSession(shell);
 
       bridge.attach(session);
       bridge.dispose();
 
-      expect(terminal.onOutput, isNull);
+      expect(session.terminal.onOutput, isNull);
     });
 
     test('dispose without attach is safe', () {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
 
       // Should not throw.
       bridge.dispose();
@@ -256,8 +246,7 @@ void main() {
 
   group('TerminalBridge clear', () {
     test('writes ANSI clear sequence to terminal', () {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
 
       // Should not throw even without a session.
       bridge.clear();
@@ -267,8 +256,7 @@ void main() {
 
   group('TerminalBridge attach replaces previous session', () {
     test('attaching a new session detaches the previous one', () async {
-      final terminal = Terminal(maxLines: 100);
-      final bridge = TerminalBridge(terminal);
+      final bridge = TerminalBridge();
 
       final shell1 = FakeSSHSession();
       final session1 = _makeSession(shell1);
@@ -292,7 +280,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       // Input should go to the new session.
-      terminal.onOutput?.call('hello');
+      session2.terminal.onOutput?.call('hello');
       final stdinSink2 = shell2.stdin as _FakeStdinSink;
       expect(stdinSink2.written.length, equals(1));
 

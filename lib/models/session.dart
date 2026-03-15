@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dartssh2/dartssh2.dart';
+import 'package:xterm/xterm.dart' as xterm;
 
 import '../services/mosh_service.dart';
 import 'connection.dart';
@@ -16,6 +17,10 @@ class ActiveSession {
   final DateTime createdAt;
   final List<ActiveForward> activeForwards;
 
+  /// Each session owns its own terminal buffer so content persists
+  /// across tab switches and navigation.
+  final xterm.Terminal terminal;
+
   bool get isMosh => moshSession != null;
 
   ActiveSession({
@@ -29,7 +34,8 @@ class ActiveSession {
     DateTime? createdAt,
     List<ActiveForward>? activeForwards,
   })  : createdAt = createdAt ?? DateTime.now(),
-        activeForwards = activeForwards ?? [];
+        activeForwards = activeForwards ?? [],
+        terminal = xterm.Terminal(maxLines: 10000);
 
   void close() {
     for (final fwd in activeForwards) {
