@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 const relayHost = 'unixshells.com';
+const relayJumpHost = 'relay.unixshells.com';
 const relaySSHPort = 22;
 const apiBaseURL = 'https://unixshells.com';
 const defaultSSHPort = 22;

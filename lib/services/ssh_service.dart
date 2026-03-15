@@ -80,17 +80,23 @@ class SSHService {
     return (custom != null && custom.isNotEmpty) ? custom : relayHost;
   }
 
+  Future<String> _getRelayJumpHost() async {
+    final custom = await _storage.getSetting('relay_host');
+    return (custom != null && custom.isNotEmpty) ? custom : relayJumpHost;
+  }
+
   Future<SSHConnectResult> _connectRelay(
       Connection conn, List<SSHKeyPair> identity,
       {List<SSHKeyPair>? agentKeys}) async {
     final host = await _getRelayHost();
+    final jumpHost = await _getRelayJumpHost();
     final dest = '${conn.relayDevice}.${conn.relayUsername}.$host';
 
     // Step 1: Connect to jump host (no auth on jump leg).
     final jumpClient = SSHClient(
-      await SSHSocket.connect(host, relaySSHPort).timeout(const Duration(seconds: 15)),
+      await SSHSocket.connect(jumpHost, relaySSHPort).timeout(const Duration(seconds: 15)),
       username: 'jump',
-      onVerifyHostKey: _makeHostKeyVerifier(host, relaySSHPort),
+      onVerifyHostKey: _makeHostKeyVerifier(jumpHost, relaySSHPort),
     );
 
     // Step 2: Open direct-tcpip tunnel through the relay.

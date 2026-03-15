@@ -224,10 +224,10 @@ void main() {
       expect(datagrams, isEmpty);
     });
 
-    test('tick returns datagrams after setPending', () {
+    test('tick returns datagrams after sendNew', () {
       final t = MoshTransport.client(ocb);
       final diff = Uint8List.fromList('hello'.codeUnits);
-      t.setPending(diff);
+      t.sendNew(diff);
 
       final datagrams = t.tick();
       expect(datagrams, isNotEmpty);
@@ -239,7 +239,7 @@ void main() {
 
     test('client tick datagrams have direction bit 0 (TO_SERVER)', () {
       final t = MoshTransport.client(ocb);
-      t.setPending(Uint8List.fromList([1, 2, 3]));
+      t.sendNew(Uint8List.fromList([1, 2, 3]));
 
       final datagrams = t.tick();
       expect(datagrams, isNotEmpty);
@@ -256,10 +256,10 @@ void main() {
     test('consecutive ticks increment sequence number', () {
       final t = MoshTransport.client(ocb);
 
-      t.setPending(Uint8List.fromList([1]));
+      t.sendNew(Uint8List.fromList([1]));
       final dg1 = t.tick();
 
-      t.setPending(Uint8List.fromList([2]));
+      t.sendNew(Uint8List.fromList([2]));
       final dg2 = t.tick();
 
       expect(dg1, isNotEmpty);
@@ -274,7 +274,7 @@ void main() {
     test('setPending with null clears pending', () {
       final t = MoshTransport.client(ocb);
 
-      t.setPending(Uint8List.fromList([1, 2, 3]));
+      t.sendNew(Uint8List.fromList([1, 2, 3]));
       t.setPending(null);
 
       // Nothing pending, no ack needed, no timeout -> empty.
@@ -290,7 +290,7 @@ void main() {
       final sender = MoshTransport.client(ocb);
       final receiver = MoshTransport.client(ocb);
 
-      sender.setPending(Uint8List.fromList('test'.codeUnits));
+      sender.sendNew(Uint8List.fromList('test'.codeUnits));
       final datagrams = sender.tick();
       expect(datagrams, isNotEmpty);
 
