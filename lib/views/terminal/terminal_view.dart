@@ -159,6 +159,7 @@ class _TerminalPageState extends State<TerminalPage>
     setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _bridge.syncDimensions();
+      session.startListening();
     });
   }
 

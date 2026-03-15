@@ -38,32 +38,6 @@ class RelayApiService {
     }
   }
 
-  /// Sign up for a new account.
-  /// Returns the created username on success.
-  Future<String> signup({
-    required String username,
-    required String email,
-    required String pubkey,
-    required String device,
-  }) async {
-    final resp = await _client.post(
-      Uri.parse('$_baseURL/api/signup'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'username': username,
-        'email': email,
-        'pubkey': pubkey,
-        'device': device,
-      }),
-    ).timeout(_timeout);
-    if (resp.statusCode != 201) {
-      final body = jsonDecode(resp.body);
-      throw ApiException(body['error'] ?? 'signup failed', resp.statusCode);
-    }
-    final body = jsonDecode(resp.body);
-    return body['username'] as String;
-  }
-
   /// Request a magic link for adding a new device.
   Future<void> requestMagicLink(String email) async {
     final resp = await _client.post(
@@ -155,8 +129,14 @@ class RelayApiService {
       }),
     ).timeout(_timeout);
     if (resp.statusCode != 200) {
-      final body = jsonDecode(resp.body);
-      throw ApiException(body['error'] ?? 'mosh relay failed', resp.statusCode);
+      String msg;
+      try {
+        final body = jsonDecode(resp.body) as Map<String, dynamic>;
+        msg = body['error'] as String? ?? 'mosh relay failed';
+      } catch (_) {
+        msg = resp.body.isNotEmpty ? resp.body : 'mosh relay failed (${resp.statusCode})';
+      }
+      throw ApiException(msg, resp.statusCode);
     }
     final body = jsonDecode(resp.body) as Map<String, dynamic>;
     return MoshRelaySession(
