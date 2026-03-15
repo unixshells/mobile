@@ -12,6 +12,7 @@ import '../crypto/ocb.dart';
 import '../models/connection.dart';
 import '../util/constants.dart';
 import 'mosh_framebuffer.dart';
+import 'package:native_udp/native_udp.dart';
 import 'ssh_service.dart';
 
 /// Mosh client implementation with full SSP protocol support.
@@ -99,10 +100,8 @@ class MoshService {
     final udpPort = moshPort;
 
     // Step 4: Open UDP socket.
-    final udpSocket = await RawDatagramSocket.bind(
-      InternetAddress.anyIPv4,
-      0,
-    );
+    // Uses native Network.framework on iOS for cellular support.
+    final udpSocket = await NativeUdpSocket.bind(0);
 
     final addresses = await InternetAddress.lookup(host);
     if (addresses.isEmpty) throw MoshException('Could not resolve $host');
@@ -136,7 +135,7 @@ class MoshService {
 /// SSP handshake. This ensures the server's initial screen state
 /// is not lost to an unsubscribed broadcast stream.
 class MoshSession {
-  final RawDatagramSocket socket;
+  final NativeUdpSocket socket;
   final InternetAddress remoteAddress;
   final int remotePort;
   final Uint8List key;
@@ -144,7 +143,7 @@ class MoshSession {
 
   final _incoming = StreamController<Uint8List>.broadcast();
   final _passthroughEscapes = StreamController<Uint8List>.broadcast();
-  StreamSubscription<RawSocketEvent>? _sub;
+  StreamSubscription<Datagram>? _sub;
   Timer? _ticker;
   bool _started = false;
 
@@ -183,7 +182,7 @@ class MoshSession {
     required this.key,
     this.motd,
   }) {
-    _sub = socket.listen(_handleEvent);
+    _sub = socket.receive.listen(_handleDatagram);
     // 8ms matches mosh's SEND_MINDELAY — minimum time to batch keystrokes.
     _ticker = Timer.periodic(const Duration(milliseconds: 8), (_) {
       _flush();
@@ -199,10 +198,7 @@ class MoshSession {
     _flush();
   }
 
-  void _handleEvent(RawSocketEvent event) {
-    if (event != RawSocketEvent.read) return;
-    final datagram = socket.receive();
-    if (datagram == null) return;
+  void _handleDatagram(Datagram datagram) {
     if (datagram.data.length < minDatagram) return;
 
     try {
@@ -384,7 +380,7 @@ class MoshSession {
 
     final datagrams = _transport.tick();
     for (final dg in datagrams) {
-      socket.send(dg, remoteAddress, remotePort);
+      socket.send(Uint8List.fromList(dg), remoteAddress, remotePort);
     }
   }
 

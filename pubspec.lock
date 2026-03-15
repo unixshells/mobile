@@ -406,6 +406,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.17.5"
+  native_udp:
+    dependency: "direct main"
+    description:
+      path: "../flutter-native-udp"
+      relative: true
+    source: path
+    version: "0.1.0"
   nested:
     dependency: transitive
     description:

@@ -40,6 +40,8 @@ dependencies:
     path: ../mosh-dart
   xterm:
     path: ../xterm
+  native_udp:
+    path: ../flutter-native-udp
   flutter_secure_storage: ^10.0.0
   sqflite: ^2.4.2
   path_provider: ^2.1.5
