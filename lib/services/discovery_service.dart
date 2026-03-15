@@ -23,6 +23,8 @@ class DiscoveryService extends ChangeNotifier {
 
   /// Sign a timestamp with the relay key for auth.
   /// Uses the key saved during sign-in, falling back to any relay-* key.
+  /// Sign a timestamp with the relay key for auth.
+  /// Uses the key saved during sign-in, falling back to any relay-* key.
   Future<String?> _getAuthToken() async {
     final keys = await _keyService.list();
     if (keys.isEmpty) return null;
@@ -62,8 +64,7 @@ class DiscoveryService extends ChangeNotifier {
     notifyListeners();
     try {
       _onlineDevices = await _api.getSessions(account.username, token: token);
-    } catch (e) {
-      debugPrint('discovery error: $e');
+    } catch (_) {
       // Keep stale list on error.
     }
     _loading = false;
