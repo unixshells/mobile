@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <clipPath id="ic">
+      <rect width="512" height="512" rx="96"/>
+    </clipPath>
+    <style>
+      @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+      @media (prefers-reduced-motion: no-preference) {
+        #cursor { animation: blink 1.1s step-end infinite; }
+      }
+    </style>
+  </defs>
+
+  <g clip-path="url(#ic)">
+    <!-- Background -->
+    <rect width="512" height="512" fill="#0d1117"/>
+
+    <!-- Nautilus spiral watermark (seashell / unix shell double meaning) -->
+    <g fill="none" stroke-linecap="round">
+      <path d="M256,306 C256,290 266,280 278,282 C296,284 302,300 298,316 C292,338 272,348 252,342 C222,332 210,304 218,278 C228,244 260,230 290,238 C332,250 348,290 336,328 C320,378 276,398 232,384 C174,364 150,310 164,258 C182,194 242,166 304,182 C376,202 408,270 388,336" stroke="#22d3ee" stroke-width="2" opacity="0.09"/>
+      <path d="M256,306 C256,298 261,294 267,295 C276,296 278,305 276,313 C272,324 262,328 252,324 C236,318 231,304 236,292 C242,276 258,270 273,276" stroke="#22d3ee" stroke-width="1.5" opacity="0.07"/>
+      <circle cx="256" cy="306" r="4" fill="#22d3ee" opacity="0.07"/>
+    </g>
+
+    <!-- Top chrome bar -->
+    <rect width="512" height="58" fill="#161625"/>
+    <rect y="57" width="512" height="1" fill="#1e2030"/>
+
+    <!-- macOS traffic light dots -->
+    <circle cx="46" cy="29" r="9" fill="#ff5f57"/>
+    <circle cx="74" cy="29" r="9" fill="#febc2e"/>
+    <circle cx="102" cy="29" r="9" fill="#28c840"/>
+
+    <!-- Window title -->
+    <text x="256" y="29" text-anchor="middle" dominant-baseline="central"
+          font-family="'SF Mono','Menlo','Courier New',monospace" font-size="12"
+          fill="#4b5563">Unix Shells</text>
+
+    <!-- > chevron -->
+    <polyline points="91,160 221,284 91,408"
+              fill="none" stroke="#22d3ee" stroke-width="28"
+              stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- _ cursor block -->
+    <rect id="cursor" x="241" y="378" width="180" height="26" rx="5" fill="#22d3ee"/>
+
+    <!-- Subtle bottom prompt lines -->
+    <text x="60" y="446" font-family="'SF Mono','Menlo',monospace" font-size="11"
+          fill="#22d3ee" fill-opacity="0.13">$ bash --version</text>
+    <text x="60" y="463" font-family="'SF Mono','Menlo',monospace" font-size="11"
+          fill="#22d3ee" fill-opacity="0.08">$ zsh --version</text>
+
+    <!-- Bottom label -->
+    <text x="256" y="490" text-anchor="middle"
+          font-family="'SF Mono','Menlo',monospace" font-size="13"
+          letter-spacing="3" fill="#22d3ee" fill-opacity="0.18">bash · zsh · fish</text>
+  </g>
+</svg>
