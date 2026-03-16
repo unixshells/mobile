@@ -8,6 +8,7 @@ class ConnectionTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
+  final VoidCallback? onResetHostKey;
   final Widget? trailing;
 
   const ConnectionTile({
@@ -16,6 +17,7 @@ class ConnectionTile extends StatelessWidget {
     required this.onTap,
     required this.onDelete,
     required this.onEdit,
+    this.onResetHostKey,
     this.trailing,
   });
 
@@ -59,6 +61,8 @@ class ConnectionTile extends StatelessWidget {
               onEdit();
             case 'delete':
               onDelete();
+            case 'reset_host_key':
+              onResetHostKey?.call();
           }
         },
         itemBuilder: (context) => [
@@ -66,6 +70,11 @@ class ConnectionTile extends StatelessWidget {
             value: 'edit',
             child: Text('Edit', style: TextStyle(color: Colors.white)),
           ),
+          if (onResetHostKey != null)
+            const PopupMenuItem(
+              value: 'reset_host_key',
+              child: Text('Reset Host Key', style: TextStyle(color: Colors.white)),
+            ),
           const PopupMenuItem(
             value: 'delete',
             child: Text('Delete', style: TextStyle(color: Colors.red)),

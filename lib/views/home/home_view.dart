@@ -108,6 +108,36 @@ class _HomeViewState extends State<HomeView>
     await _loadConnections();
   }
 
+  Future<void> _resetHostKeyForConnection(Connection conn) async {
+    final storage = context.read<StorageService>();
+    final messenger = ScaffoldMessenger.of(context);
+    if (conn.type == ConnectionType.relay) {
+      final host = await storage.getSetting('relay_host');
+      final relayHost = (host != null && host.isNotEmpty) ? host : 'unixshells.com';
+      final dest = '${conn.relayDevice}.${conn.relayUsername}.$relayHost';
+      await storage.deleteHostKey(dest, defaultSSHPort);
+    } else {
+      await storage.deleteHostKey(conn.host, conn.port);
+    }
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Host key cleared')),
+    );
+  }
+
+  Future<void> _resetHostKeyForSession(Device device, String sessionName) async {
+    final storage = context.read<StorageService>();
+    final account = await storage.getAccount();
+    final messenger = ScaffoldMessenger.of(context);
+    if (account == null) return;
+    final host = await storage.getSetting('relay_host');
+    final relayHost = (host != null && host.isNotEmpty) ? host : 'unixshells.com';
+    final dest = '${device.name}.${account.username}.$relayHost';
+    await storage.deleteHostKey(dest, defaultSSHPort);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Host key cleared')),
+    );
+  }
+
   Future<void> _onReorder(List<Connection> conns, int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex--;
     final item = conns.removeAt(oldIndex);
@@ -350,6 +380,18 @@ class _HomeViewState extends State<HomeView>
                       style: TextStyle(color: Colors.white)),
                 ),
               ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () async {
+                    await _resetHostKeyForSession(device, sessionName);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  child: const Text('Reset Host Key',
+                      style: TextStyle(color: Colors.white38, fontSize: 13)),
+                ),
+              ),
             ],
           ),
         ),
@@ -587,6 +629,7 @@ class _HomeViewState extends State<HomeView>
                       );
                       _loadConnections();
                     },
+                    onResetHostKey: () => _resetHostKeyForConnection(conn),
                     trailing: isOnline
                         ? const Icon(Icons.circle, color: Colors.green, size: 8)
                         : null,
@@ -718,6 +761,7 @@ class _HomeViewState extends State<HomeView>
               );
               _loadConnections();
             },
+            onResetHostKey: () => _resetHostKeyForConnection(connections[i]),
           ),
         ),
       );
@@ -743,6 +787,7 @@ class _HomeViewState extends State<HomeView>
             );
             _loadConnections();
           },
+          onResetHostKey: () => _resetHostKeyForConnection(connections[i]),
         ),
       ),
     );
