@@ -304,7 +304,7 @@ class _HomeViewState extends State<HomeView>
                 value: useMosh,
                 onChanged: (v) => setSheetState(() => useMosh = v),
               ),
-              if (keys.length > 1) ...[
+              if (keys.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: keyId,
@@ -418,7 +418,7 @@ class _HomeViewState extends State<HomeView>
                   fillColor: bgDark,
                 ),
               ),
-              if (keys.length > 1) ...[
+              if (keys.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: keyId,

@@ -54,6 +54,38 @@ class _SettingsViewState extends State<SettingsView> {
     await storage.saveSetting(key, value);
   }
 
+  Future<void> _clearHostKeys() async {
+    final storage = context.read<StorageService>();
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: bgCard,
+        title: const Text('Clear Host Keys',
+            style: TextStyle(color: Colors.white)),
+        content: const Text(
+            'This will remove all cached host key fingerprints. '
+            'You will be prompted to accept host keys again on next connect.',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Clear', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await storage.clearHostKeys();
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Host keys cleared')),
+    );
+  }
+
   Future<void> _exportBackup() async {
     final storage = context.read<StorageService>();
     final messenger = ScaffoldMessenger.of(context);
@@ -191,6 +223,20 @@ class _SettingsViewState extends State<SettingsView> {
                       'Restore from a backup file',
                       style: TextStyle(color: Colors.white38, fontSize: 12)),
                   onTap: _importBackup,
+                ),
+
+                const SizedBox(height: 24),
+                _sectionHeader('Security'),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.key_off_outlined,
+                      color: Colors.white54),
+                  title: const Text('Clear Host Keys',
+                      style: TextStyle(color: Colors.white)),
+                  subtitle: const Text(
+                      'Remove cached SSH host key fingerprints',
+                      style: TextStyle(color: Colors.white38, fontSize: 12)),
+                  onTap: _clearHostKeys,
                 ),
 
                 const SizedBox(height: 24),

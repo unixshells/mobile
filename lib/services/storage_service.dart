@@ -166,6 +166,15 @@ class StorageService {
     await _secureStorage.delete(key: 'hostkey_$host:$port');
   }
 
+  Future<void> clearHostKeys() async {
+    final all = await _secureStorage.readAll();
+    for (final key in all.keys) {
+      if (key.startsWith('hostkey_')) {
+        await _secureStorage.delete(key: key);
+      }
+    }
+  }
+
   // Settings.
 
   Future<void> saveSetting(String key, String value) async {
