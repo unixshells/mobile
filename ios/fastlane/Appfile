@@ -1,0 +1,5 @@
+app_identifier("com.unixshells.unixshells")
+apple_id("mark@klb.jp")
+
+itc_team_id(ENV["ITC_TEAM_ID"]) if ENV["ITC_TEAM_ID"]
+team_id(ENV["TEAM_ID"]) if ENV["TEAM_ID"]

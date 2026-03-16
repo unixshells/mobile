@@ -1,0 +1,29 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Download metadata from App Store Connect"
+  lane :download_metadata do
+    download_app_privacy_details_from_app_store(
+      username: "mark@klb.jp",
+      app_identifier: "com.unixshells.unixshells"
+    )
+  end
+
+  desc "Upload metadata to App Store Connect"
+  lane :upload_metadata do
+    deliver(
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      force: true
+    )
+  end
+
+  desc "Upload screenshots to App Store Connect"
+  lane :upload_screenshots do
+    deliver(
+      skip_binary_upload: true,
+      skip_metadata: true,
+      force: true
+    )
+  end
+end
