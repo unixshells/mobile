@@ -22,7 +22,7 @@ class SSHService {
   /// On first connect, stores the fingerprint. On subsequent connects,
   /// rejects if the fingerprint has changed.
   FutureOr<bool> Function(String type, Uint8List fingerprint)
-      _makeHostKeyVerifier(String host, int port) {
+  _makeHostKeyVerifier(String host, int port) {
     return (String type, Uint8List fingerprint) async {
       final fpHex = fingerprint
           .map((b) => b.toRadixString(16).padLeft(2, '0'))
@@ -54,10 +54,15 @@ class SSHService {
   }
 
   Future<SSHConnectResult> _connectDirect(
-      Connection conn, List<SSHKeyPair> identity,
-      {List<SSHKeyPair>? agentKeys}) async {
+    Connection conn,
+    List<SSHKeyPair> identity, {
+    List<SSHKeyPair>? agentKeys,
+  }) async {
     final client = SSHClient(
-      await SSHSocket.connect(conn.host, conn.port).timeout(const Duration(seconds: 15)),
+      await SSHSocket.connect(
+        conn.host,
+        conn.port,
+      ).timeout(const Duration(seconds: 15)),
       username: conn.username,
       identities: identity.isNotEmpty ? identity : null,
       onVerifyHostKey: _makeHostKeyVerifier(conn.host, conn.port),
@@ -86,26 +91,41 @@ class SSHService {
   }
 
   Future<SSHConnectResult> _connectRelay(
-      Connection conn, List<SSHKeyPair> identity,
-      {List<SSHKeyPair>? agentKeys}) async {
+    Connection conn,
+    List<SSHKeyPair> identity, {
+    List<SSHKeyPair>? agentKeys,
+  }) async {
     final host = await _getRelayHost();
     final jumpHost = await _getRelayJumpHost();
     final dest = '${conn.relayDevice}.${conn.relayUsername}.$host';
 
+    // Resolve jump host IP for mosh UDP fallback (same relay we SSH through).
+    final jumpAddresses = await InternetAddress.lookup(jumpHost);
+    final jumpHostAddress = jumpAddresses.isNotEmpty
+        ? jumpAddresses.first.address
+        : null;
+
     // Step 1: Connect to jump host (no auth on jump leg).
     final jumpClient = SSHClient(
-      await SSHSocket.connect(jumpHost, relaySSHPort).timeout(const Duration(seconds: 15)),
+      await SSHSocket.connect(
+        jumpHost,
+        relaySSHPort,
+      ).timeout(const Duration(seconds: 15)),
       username: 'jump',
       onVerifyHostKey: _makeHostKeyVerifier(jumpHost, relaySSHPort),
     );
 
     // Step 2: Open direct-tcpip tunnel through the relay.
-    final tunnel = await jumpClient.forwardLocal(dest, defaultSSHPort).timeout(const Duration(seconds: 30));
+    final tunnel = await jumpClient
+        .forwardLocal(dest, defaultSSHPort)
+        .timeout(const Duration(seconds: 30));
 
     // Step 3: SSH through the tunnel (end-to-end encrypted).
     final targetClient = SSHClient(
       tunnel,
-      username: conn.sessionName?.isNotEmpty == true ? conn.sessionName! : 'default',
+      username: conn.sessionName?.isNotEmpty == true
+          ? conn.sessionName!
+          : 'default',
       identities: identity.isNotEmpty ? identity : null,
       onVerifyHostKey: _makeHostKeyVerifier(dest, defaultSSHPort),
       onPasswordRequest: conn.authMethod == AuthMethod.password
@@ -123,31 +143,29 @@ class SSHService {
     return SSHConnectResult(
       jumpClient: jumpClient,
       targetClient: targetClient,
+      jumpHostAddress: jumpHostAddress,
     );
   }
 
   /// Open an interactive shell on the client.
   /// Session selection is handled by the SSH username, so this always
   /// opens a plain shell.
-  Future<SSHSession> openShell(SSHClient client,
-      {int cols = 80,
-      int rows = 24,
-      bool agentForwarding = false}) async {
-    final pty = SSHPtyConfig(
-      width: cols,
-      height: rows,
-      type: terminalType,
-    );
+  Future<SSHSession> openShell(
+    SSHClient client, {
+    int cols = 80,
+    int rows = 24,
+    bool agentForwarding = false,
+  }) async {
+    final pty = SSHPtyConfig(width: cols, height: rows, type: terminalType);
 
-    return await client.shell(
-      pty: pty,
-      agentForwarding: agentForwarding,
-    );
+    return await client.shell(pty: pty, agentForwarding: agentForwarding);
   }
 
   /// Start port forwards for a connection. Returns list of active forwards.
   Future<List<ActiveForward>> startPortForwards(
-      SSHClient client, List<PortForward> forwards) async {
+    SSHClient client,
+    List<PortForward> forwards,
+  ) async {
     final active = <ActiveForward>[];
     for (final fwd in forwards) {
       if (fwd.type == ForwardType.local) {
@@ -162,13 +180,19 @@ class SSHService {
   }
 
   Future<ActiveForward> _startLocalForward(
-      SSHClient client, PortForward fwd) async {
-    final server =
-        await ServerSocket.bind(InternetAddress.loopbackIPv4, fwd.localPort);
+    SSHClient client,
+    PortForward fwd,
+  ) async {
+    final server = await ServerSocket.bind(
+      InternetAddress.loopbackIPv4,
+      fwd.localPort,
+    );
     server.listen((socket) async {
       try {
-        final channel =
-            await client.forwardLocal(fwd.remoteHost, fwd.remotePort);
+        final channel = await client.forwardLocal(
+          fwd.remoteHost,
+          fwd.remotePort,
+        );
         socket.addStream(channel.stream).catchError((_) {});
         channel.sink.addStream(socket).catchError((_) {});
       } catch (_) {
@@ -182,13 +206,17 @@ class SSHService {
   }
 
   Future<ActiveForward?> _startRemoteForward(
-      SSHClient client, PortForward fwd) async {
+    SSHClient client,
+    PortForward fwd,
+  ) async {
     final remote = await client.forwardRemote(port: fwd.remotePort);
     if (remote == null) return null;
     remote.connections.listen((conn) async {
       try {
         final socket = await Socket.connect(
-            InternetAddress.loopbackIPv4, fwd.localPort);
+          InternetAddress.loopbackIPv4,
+          fwd.localPort,
+        );
         socket.addStream(conn.stream).catchError((_) {});
         conn.sink.addStream(socket).catchError((_) {});
       } catch (_) {
@@ -221,5 +249,12 @@ class SSHConnectResult {
   final SSHClient? jumpClient;
   final SSHClient targetClient;
 
-  SSHConnectResult({this.jumpClient, required this.targetClient});
+  /// Resolved IP address of the relay jump host (for mosh UDP fallback).
+  final String? jumpHostAddress;
+
+  SSHConnectResult({
+    this.jumpClient,
+    required this.targetClient,
+    this.jumpHostAddress,
+  });
 }

@@ -67,11 +67,14 @@ class MoshService {
 
     // Step 2: Parse MOSH CONNECT [port] [key].
     final output = stdout.toString() + stderr.toString();
-    final match = RegExp(r'MOSH CONNECT (\d+) ([A-Za-z0-9/+]+={0,2})')
-        .firstMatch(output);
+    final match = RegExp(
+      r'MOSH CONNECT (\d+) ([A-Za-z0-9/+]+={0,2})',
+    ).firstMatch(output);
     if (match == null) {
-      throw MoshException('mosh-server did not return connection info.\n'
-          'Is mosh-server installed on the remote? Output: $output');
+      throw MoshException(
+        'mosh-server did not return connection info.\n'
+        'Is mosh-server installed on the remote? Output: $output',
+      );
     }
 
     final moshPort = int.parse(match.group(1)!);
@@ -88,12 +91,13 @@ class MoshService {
 
     // Step 3: Determine UDP target.
     // For relay connections, latch rewrites the MOSH CONNECT line with the
-    // relay's public UDP port. If MOSH IP is present, use that specific
-    // relay address. Otherwise fall back to the geo-routed relay hostname.
+    // relay's public UDP port. Prefer MOSH IP from latch (always the latest
+    // relay address), then fall back to the resolved IP of the jump host we
+    // actually connected through (same relay instance), then geo-routed hostname.
     String host;
     if (conn.type == ConnectionType.relay) {
       final ipMatch = RegExp(r'MOSH IP (\S+)').firstMatch(output);
-      host = ipMatch?.group(1) ?? relayJumpHost;
+      host = ipMatch?.group(1) ?? result.jumpHostAddress ?? relayJumpHost;
     } else {
       host = conn.host;
     }
