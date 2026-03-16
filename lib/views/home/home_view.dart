@@ -270,12 +270,22 @@ class _HomeViewState extends State<HomeView>
     final storage = context.read<StorageService>();
     final account = await storage.getAccount();
     final conn = await _buildDeviceConnection(device);
-    // Check per-session prefs (mosh, key) — fall back to device prefs.
+    // Check per-session prefs (mosh, key) — fall back to device prefs,
+    // then to first available key.
     if (account != null) {
       final sessionPrefs = await storage.getDevicePrefs(
           account.username, '${device.name}:$sessionName');
       final useMosh = sessionPrefs['useMosh'] as bool? ?? conn.useMosh;
-      final keyId = sessionPrefs['keyId'] as String? ?? conn.keyId;
+      var keyId = sessionPrefs['keyId'] as String? ?? conn.keyId;
+      // Verify the key still exists, fall back to first available.
+      if (keyId != null) {
+        final keyService = context.read<KeyService>();
+        final identities = await keyService.loadIdentity(keyId);
+        if (identities.isEmpty) {
+          final keys = await keyService.list();
+          keyId = keys.isNotEmpty ? keys.first.id : null;
+        }
+      }
       final withSession = conn.copyWith(
           sessionName: sessionName, useMosh: useMosh, keyId: keyId);
       if (!mounted) return;
