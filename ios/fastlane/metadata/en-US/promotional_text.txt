@@ -1,1 +1,1 @@
-Secure SSH, Mosh, and SFTP access to your servers — with relay support to reach machines behind NAT, no port forwarding needed.
+Secure SSH, Mosh, and SFTP from your phone. Run AI coding agents like Claude Code and Codex remotely, with relay support to reach machines behind NAT.

@@ -1,1 +1,1 @@
-ssh,mosh,sftp,terminal,shell,remote,server,linux,unix,sysadmin,console,key,relay,port forwarding
+ssh,mosh,sftp,terminal,shell,remote,server,linux,unix,ai,claude code,codex,sysadmin,relay,console

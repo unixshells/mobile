@@ -29,5 +29,8 @@ Full-featured terminal with 256-color support, 10,000-line scrollback, search, a
 Backup & Restore
 Export all your connections, keys, and settings to a JSON file for safekeeping or migration to another device. Import backups to restore your setup in seconds.
 
+Remote AI Development
+Run AI coding agents like Claude Code, Codex, and other terminal-based AI tools from your phone. Mosh keeps your session alive through network changes, so long-running AI tasks continue uninterrupted while you're on the go. Monitor progress, review output, and steer your AI assistant from anywhere.
+
 SECURITY
 All connections are end-to-end encrypted. SSH host keys are verified on first use and cached locally. Private keys never leave your device.
