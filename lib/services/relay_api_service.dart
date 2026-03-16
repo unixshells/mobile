@@ -171,10 +171,11 @@ class RelayApiService {
     );
   }
 
-  /// Get account status and device list.
-  Future<AccountStatus> getStatus(String username) async {
+  /// Get account status and device list. Requires auth token (timestamp:signature).
+  Future<AccountStatus> getStatus(String username, {required String token}) async {
     final resp = await _client.get(
       Uri.parse('$_baseURL/api/status/$username'),
+      headers: {'Authorization': 'Bearer $token'},
     ).timeout(_timeout);
     if (resp.statusCode != 200) {
       throw ApiException('account not found', resp.statusCode);

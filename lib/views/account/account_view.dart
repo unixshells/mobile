@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -33,6 +35,25 @@ class _AccountViewState extends State<AccountView> {
     _loadAccount();
   }
 
+  Future<String?> _getAuthToken() async {
+    final keyService = context.read<KeyService>();
+    final storage = context.read<StorageService>();
+    final keys = await keyService.list();
+    if (keys.isEmpty) return null;
+    final savedKeyId = await storage.getSetting('relay_key_id');
+    var key = savedKeyId != null
+        ? keys.where((k) => k.id == savedKeyId).firstOrNull
+        : null;
+    key ??= keys.where((k) => k.label.startsWith('relay-')).firstOrNull;
+    if (key == null) return null;
+    final identities = await keyService.loadIdentity(key.id);
+    if (identities.isEmpty) return null;
+    final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    final sig = identities.first.sign(Uint8List.fromList(utf8.encode(timestamp)));
+    final token = base64Encode(sig.encode());
+    return '$timestamp:$token';
+  }
+
   Future<void> _loadAccount() async {
     final storage = context.read<StorageService>();
     final account = await storage.getAccount();
@@ -49,7 +70,9 @@ class _AccountViewState extends State<AccountView> {
     final storage = context.read<StorageService>();
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final status = await api.getStatus(_account!.username);
+      final token = await _getAuthToken();
+      if (token == null) return;
+      final status = await api.getStatus(_account!.username, token: token);
       await storage.saveAccount(status.account);
       if (mounted) {
         setState(() {
@@ -369,9 +392,10 @@ class _AccountViewState extends State<AccountView> {
       }
 
       // Fetch account details.
-      final status = await api.getStatus(approvedUsername);
-      await storage.saveAccount(status.account);
       await storage.saveSetting('relay_key_id', key.id);
+      final token = await _getAuthToken();
+      final status = await api.getStatus(approvedUsername, token: token ?? '');
+      await storage.saveAccount(status.account);
       await _loadAccount();
       if (mounted) {
         context.read<DiscoveryService>().refresh();
