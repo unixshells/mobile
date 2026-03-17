@@ -15,6 +15,11 @@ Mobile SSH, Mosh, and SFTP client. iOS and Android.
 When connected via mosh to a latch server, SFTP runs over the
 SSH connection that bootstrapped the mosh session.
 
+## Platforms
+
+- iOS 15+
+- Android 8.0+ (API 26)
+
 ## Building
 
 ```
