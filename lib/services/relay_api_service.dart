@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/account.dart';
 import '../models/device.dart';
+import '../models/shell.dart';
 import '../util/constants.dart';
 
 /// TLS validation: Platform CA store validates the relay server certificate.
@@ -169,6 +170,76 @@ class RelayApiService {
       relayHost: body['relay_host'] as String,
       relayPort: body['relay_port'] as int,
     );
+  }
+
+  /// List user's shells. Requires auth token.
+  Future<List<Shell>> listShells({required String token}) async {
+    final resp = await _client.get(
+      Uri.parse('$_baseURL/api/shells'),
+      headers: {'Authorization': 'Bearer $token'},
+    ).timeout(_timeout);
+    if (resp.statusCode != 200) {
+      throw ApiException('failed to list shells', resp.statusCode);
+    }
+    final body = jsonDecode(resp.body) as Map<String, dynamic>;
+    return (body['shells'] as List)
+        .map((s) => Shell.fromJson(s as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Request shell checkout. Server sends email with checkout link.
+  Future<String> requestShell({required String username, String plan = 'shell'}) async {
+    final resp = await _client.post(
+      Uri.parse('$_baseURL/api/request-shell'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'username': username, 'plan': plan}),
+    ).timeout(_timeout);
+    if (resp.statusCode != 200) {
+      final body = jsonDecode(resp.body);
+      throw ApiException(body['error'] ?? 'request failed', resp.statusCode);
+    }
+    final body = jsonDecode(resp.body);
+    return body['message'] as String? ?? 'Check your email';
+  }
+
+  /// Destroy a shell (sends email verification).
+  Future<String> destroyShell(String shellId, {required String token}) async {
+    final resp = await _client.post(
+      Uri.parse('$_baseURL/api/shells/$shellId/destroy'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({}),
+    ).timeout(_timeout);
+    final body = jsonDecode(resp.body) as Map<String, dynamic>;
+    if (resp.statusCode == 202) {
+      return body['message'] as String? ?? 'Check your email to confirm';
+    }
+    if (resp.statusCode != 200) {
+      throw ApiException(body['error'] ?? 'destroy failed', resp.statusCode);
+    }
+    return 'Shell destroyed';
+  }
+
+  /// Restart a shell (sends email verification).
+  Future<String> restartShell(String shellId, {required String token}) async {
+    final resp = await _client.post(
+      Uri.parse('$_baseURL/api/shells/$shellId/restart'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({}),
+    ).timeout(_timeout);
+    final body = jsonDecode(resp.body) as Map<String, dynamic>;
+    if (resp.statusCode == 202) {
+      return body['message'] as String? ?? 'Check your email to confirm';
+    }
+    if (resp.statusCode != 200) {
+      throw ApiException(body['error'] ?? 'restart failed', resp.statusCode);
+    }
+    return 'Shell restarted';
   }
 
   /// Get account status and device list. Requires auth token (timestamp:signature).

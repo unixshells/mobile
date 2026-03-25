@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/connection.dart';
 import '../../models/device.dart';
 import '../../services/discovery_service.dart';
+import '../shells/shells_view.dart';
 import '../../services/key_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/storage_service.dart';
@@ -32,7 +33,7 @@ class _HomeViewState extends State<HomeView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadConnections();
   }
 
@@ -176,7 +177,8 @@ class _HomeViewState extends State<HomeView>
           unselectedLabelColor: Colors.white54,
           tabs: [
             const Tab(text: 'All'),
-            const Tab(text: 'Unix Shells'),
+            const Tab(text: 'Relay'),
+            const Tab(text: 'Shells'),
             Consumer<SessionManager>(
               builder: (context, manager, _) {
                 final count = manager.sessions.length;
@@ -218,6 +220,7 @@ class _HomeViewState extends State<HomeView>
               children: [
                 _buildConnectionList(_filter(_connections)),
                 _buildUnixShellsTab(),
+                _buildShellsTab(),
                 _buildSessionList(),
               ],
             ),
@@ -660,6 +663,10 @@ class _HomeViewState extends State<HomeView>
           style: const TextStyle(
               color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w600)),
     );
+  }
+
+  Widget _buildShellsTab() {
+    return const ShellsTab();
   }
 
   Widget _buildSessionList() {

@@ -85,7 +85,7 @@ void main() {
         );
       });
       final api = RelayApiService(client: client, baseURL: 'http://test');
-      final status = await api.getStatus('user1');
+      final status = await api.getStatus('user1', token: 'test:token');
 
       expect(status.account.username, 'user1');
       expect(status.account.email, 'u@e.com');
@@ -103,7 +103,7 @@ void main() {
           MockClient((_) async => http.Response('not found', 404));
       final api = RelayApiService(client: client, baseURL: 'http://test');
       expect(
-        () => api.getStatus('nobody'),
+        () => api.getStatus('nobody', token: 'test:token'),
         throwsA(isA<ApiException>()),
       );
     });
