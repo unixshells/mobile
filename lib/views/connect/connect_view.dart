@@ -127,7 +127,7 @@ class _ConnectViewState extends State<ConnectView> {
         builder: (ctx, setDialogState) => AlertDialog(
           backgroundColor: bgCard,
           title: const Text('Add Port Forward',
-              style: TextStyle(color: Colors.white)),
+              style: TextStyle(color: textBright)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -141,38 +141,38 @@ class _ConnectViewState extends State<ConnectView> {
                 onSelectionChanged: (v) =>
                     setDialogState(() => type = v.first),
                 style: ButtonStyle(
-                  foregroundColor: WidgetStateProperty.all(Colors.white),
+                  foregroundColor: WidgetStateProperty.all(textBright),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: localPortCtrl,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: textBright),
                 decoration: InputDecoration(
                   labelText: type == ForwardType.local
                       ? 'Local Port'
                       : 'Local Port (destination)',
-                  labelStyle: const TextStyle(color: Colors.white54),
+                  labelStyle: const TextStyle(color: textDim),
                 ),
               ),
               TextField(
                 controller: remoteHostCtrl,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: textBright),
                 decoration: const InputDecoration(
                   labelText: 'Remote Host',
-                  labelStyle: TextStyle(color: Colors.white54),
+                  labelStyle: TextStyle(color: textDim),
                 ),
               ),
               TextField(
                 controller: remotePortCtrl,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: textBright),
                 decoration: InputDecoration(
                   labelText: type == ForwardType.local
                       ? 'Remote Port (destination)'
                       : 'Remote Port (listen)',
-                  labelStyle: const TextStyle(color: Colors.white54),
+                  labelStyle: const TextStyle(color: textDim),
                 ),
               ),
             ],
@@ -222,12 +222,12 @@ class _ConnectViewState extends State<ConnectView> {
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit Connection' : 'New Connection'),
         backgroundColor: bgCard,
-        foregroundColor: Colors.white,
+        foregroundColor: textBright,
         actions: [
           TextButton(
             onPressed: _save,
             child:
-                const Text('Save', style: TextStyle(color: Colors.blue)),
+                const Text('Save', style: TextStyle(color: accent)),
           ),
         ],
       ),
@@ -247,7 +247,7 @@ class _ConnectViewState extends State<ConnectView> {
               selected: {_type},
               onSelectionChanged: (v) => setState(() => _type = v.first),
               style: ButtonStyle(
-                foregroundColor: WidgetStateProperty.all(Colors.white),
+                foregroundColor: WidgetStateProperty.all(textBright),
               ),
             ),
             const SizedBox(height: 16),
@@ -285,7 +285,7 @@ class _ConnectViewState extends State<ConnectView> {
               onSelectionChanged: (v) =>
                   setState(() => _authMethod = v.first),
               style: ButtonStyle(
-                foregroundColor: WidgetStateProperty.all(Colors.white),
+                foregroundColor: WidgetStateProperty.all(textBright),
               ),
             ),
             const SizedBox(height: 12),
@@ -294,9 +294,9 @@ class _ConnectViewState extends State<ConnectView> {
               DropdownButtonFormField<String>(
                 initialValue: _selectedKeyId,
                 hint: const Text('Select SSH key',
-                    style: TextStyle(color: Colors.white38)),
+                    style: TextStyle(color: textMuted)),
                 dropdownColor: bgCard,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: textBright),
                 items: _keys
                     .map((k) => DropdownMenuItem(
                           value: k.id,
@@ -324,10 +324,10 @@ class _ConnectViewState extends State<ConnectView> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Use Mosh',
-                  style: TextStyle(color: Colors.white)),
+                  style: TextStyle(color: textBright)),
               subtitle: const Text(
                   'Mobile shell — roaming, intermittent connectivity',
-                  style: TextStyle(color: Colors.white38, fontSize: 12)),
+                  style: TextStyle(color: textMuted, fontSize: 12)),
               value: _useMosh,
               onChanged: (v) => setState(() => _useMosh = v),
             ),
@@ -337,7 +337,7 @@ class _ConnectViewState extends State<ConnectView> {
               padding: EdgeInsets.only(bottom: 12),
               child: Text(
                   'Leave blank for "default". Selects which latch session to attach to.',
-                  style: TextStyle(color: Colors.white38, fontSize: 12)),
+                  style: TextStyle(color: textMuted, fontSize: 12)),
             ),
 
             // Forwarding section.
@@ -346,9 +346,9 @@ class _ConnectViewState extends State<ConnectView> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Agent Forwarding',
-                  style: TextStyle(color: Colors.white)),
+                  style: TextStyle(color: textBright)),
               subtitle: const Text('Forward SSH keys to remote host',
-                  style: TextStyle(color: Colors.white38, fontSize: 12)),
+                  style: TextStyle(color: textMuted, fontSize: 12)),
               value: _agentForwarding,
               onChanged: (v) => setState(() => _agentForwarding = v),
             ),
@@ -357,9 +357,9 @@ class _ConnectViewState extends State<ConnectView> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Port Forwards',
-                    style: TextStyle(color: Colors.white, fontSize: 14)),
+                    style: TextStyle(color: textBright, fontSize: 14)),
                 IconButton(
-                  icon: const Icon(Icons.add, color: Colors.blue, size: 20),
+                  icon: const Icon(Icons.add, color: accent, size: 20),
                   onPressed: _addPortForward,
                 ),
               ],
@@ -368,7 +368,7 @@ class _ConnectViewState extends State<ConnectView> {
               const Padding(
                 padding: EdgeInsets.only(bottom: 8),
                 child: Text('No port forwards configured',
-                    style: TextStyle(color: Colors.white24, fontSize: 13)),
+                    style: TextStyle(color: borderColor, fontSize: 13)),
               ),
             ..._portForwards.asMap().entries.map((entry) {
               final i = entry.key;
@@ -379,13 +379,13 @@ class _ConnectViewState extends State<ConnectView> {
                   fwd.type == ForwardType.local
                       ? Icons.arrow_forward
                       : Icons.arrow_back,
-                  color: Colors.white54,
+                  color: textDim,
                   size: 18,
                 ),
                 title: Text(
                   fwd.toString(),
                   style:
-                      const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 13),
+                      const TextStyle(color: textBright, fontFamily: 'monospace', fontSize: 13),
                 ),
                 trailing: IconButton(
                   icon: const Icon(Icons.close, color: Colors.red, size: 18),
@@ -405,7 +405,7 @@ class _ConnectViewState extends State<ConnectView> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(text,
           style: const TextStyle(
-              color: Colors.white54,
+              color: textDim,
               fontSize: 13,
               fontWeight: FontWeight.w600)),
     );
@@ -425,7 +425,7 @@ class _ConnectViewState extends State<ConnectView> {
         controller: ctrl,
         obscureText: obscure,
         keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.white),
+        style: const TextStyle(color: textBright),
         decoration: _inputDecoration(label).copyWith(hintText: hint),
         validator: validator,
       ),
@@ -447,14 +447,14 @@ class _ConnectViewState extends State<ConnectView> {
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.white54),
-      hintStyle: const TextStyle(color: Colors.white24),
+      labelStyle: const TextStyle(color: textDim),
+      hintStyle: const TextStyle(color: borderColor),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.white24),
+        borderSide: BorderSide(color: borderColor),
         borderRadius: BorderRadius.circular(8),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.blue),
+        borderSide: const BorderSide(color: accent),
         borderRadius: BorderRadius.circular(8),
       ),
       filled: true,

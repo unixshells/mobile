@@ -286,7 +286,7 @@ class _SftpViewState extends State<SftpView> {
         backgroundColor: bgCard,
         title: const Text('Delete', style: TextStyle(color: Colors.white)),
         content: Text('Delete "${entry.filename}"?',
-            style: const TextStyle(color: Colors.white70)),
+            style: const TextStyle(color: textDim)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -323,7 +323,7 @@ class _SftpViewState extends State<SftpView> {
         backgroundColor: bgCard,
         title: const Text('Delete', style: TextStyle(color: Colors.white)),
         content: Text('Delete ${_selectedPaths.length} item(s)?',
-            style: const TextStyle(color: Colors.white70)),
+            style: const TextStyle(color: textDim)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -370,7 +370,7 @@ class _SftpViewState extends State<SftpView> {
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Colors.white38),
+            hintStyle: const TextStyle(color: textMuted),
           ),
         ),
         actions: [
@@ -397,19 +397,19 @@ class _SftpViewState extends State<SftpView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.info_outline, color: Colors.white70),
+              leading: const Icon(Icons.info_outline, color: textDim),
               title: Text(entry.filename,
                   style: const TextStyle(color: Colors.white)),
               subtitle: Text(
                 '${_formatPermissions(entry.attr.mode)}  ${_formatSize(entry.attr.size)}',
-                style: const TextStyle(color: Colors.white38),
+                style: const TextStyle(color: textMuted),
               ),
             ),
-            const Divider(color: Colors.white12),
+            const Divider(color: borderColor),
             if (!isDir)
               ListTile(
                 leading:
-                    const Icon(Icons.download_outlined, color: Colors.white70),
+                    const Icon(Icons.download_outlined, color: textDim),
                 title: const Text('Download',
                     style: TextStyle(color: Colors.white)),
                 onTap: () {
@@ -420,7 +420,7 @@ class _SftpViewState extends State<SftpView> {
               ),
             ListTile(
               leading: const Icon(Icons.drive_file_rename_outline,
-                  color: Colors.white70),
+                  color: textDim),
               title:
                   const Text('Rename', style: TextStyle(color: Colors.white)),
               onTap: () {
@@ -487,15 +487,15 @@ class _SftpViewState extends State<SftpView> {
             Expanded(child: _buildBody()),
             if (_isDragOver)
               Container(
-                color: Colors.blue.withValues(alpha: 0.15),
+                color: accent.withValues(alpha: 0.15),
                 padding: const EdgeInsets.all(24),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.file_upload, color: Colors.blue, size: 32),
+                    Icon(Icons.file_upload, color: accent, size: 32),
                     SizedBox(width: 12),
                     Text('Drop files to upload',
-                        style: TextStyle(color: Colors.blue, fontSize: 16)),
+                        style: TextStyle(color: accent, fontSize: 16)),
                   ],
                 ),
               ),
@@ -558,21 +558,21 @@ class _SftpViewState extends State<SftpView> {
             GestureDetector(
               onTap: _navigateUp,
               child: const Icon(Icons.arrow_upward,
-                  size: 20, color: Colors.white54),
+                  size: 20, color: textDim),
             ),
           if (_currentPath != '/') const SizedBox(width: 8),
           Expanded(
             child: Text(
               _currentPath,
               style: const TextStyle(
-                  color: Colors.white70, fontSize: 13, fontFamily: 'monospace'),
+                  color: textDim, fontSize: 13, fontFamily: 'monospace'),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           GestureDetector(
             onTap: () => _listDir(_currentPath),
             child:
-                const Icon(Icons.refresh, size: 20, color: Colors.white54),
+                const Icon(Icons.refresh, size: 20, color: textDim),
           ),
         ],
       ),
@@ -593,7 +593,7 @@ class _SftpViewState extends State<SftpView> {
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 16),
               Text(_error!,
-                  style: const TextStyle(color: Colors.white70),
+                  style: const TextStyle(color: textDim),
                   textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -608,7 +608,7 @@ class _SftpViewState extends State<SftpView> {
     if (_entries.isEmpty) {
       return const Center(
         child: Text('Empty directory',
-            style: TextStyle(color: Colors.white38, fontSize: 16)),
+            style: TextStyle(color: textMuted, fontSize: 16)),
       );
     }
     return RefreshIndicator(
@@ -630,13 +630,13 @@ class _SftpViewState extends State<SftpView> {
     Color iconColor;
     if (isDir) {
       icon = Icons.folder;
-      iconColor = Colors.blue;
+      iconColor = accent;
     } else if (isLink) {
       icon = Icons.link;
       iconColor = Colors.cyan;
     } else {
       icon = _fileIcon(entry.filename);
-      iconColor = Colors.white54;
+      iconColor = textDim;
     }
 
     return ListTile(
@@ -644,9 +644,9 @@ class _SftpViewState extends State<SftpView> {
           ? Checkbox(
               value: selected,
               onChanged: (_) => _toggleSelect(entry),
-              activeColor: Colors.blue,
+              activeColor: accent,
               checkColor: Colors.white,
-              side: const BorderSide(color: Colors.white38),
+              side: const BorderSide(color: textMuted),
             )
           : Icon(icon, color: iconColor),
       title: Text(
@@ -661,13 +661,13 @@ class _SftpViewState extends State<SftpView> {
         isDir
             ? _formatPermissions(entry.attr.mode)
             : '${_formatSize(entry.attr.size)}  ${_formatPermissions(entry.attr.mode)}',
-        style: const TextStyle(color: Colors.white38, fontSize: 12),
+        style: const TextStyle(color: textMuted, fontSize: 12),
       ),
       trailing: !_selectMode
           ? GestureDetector(
               onTap: () => _showEntryActions(entry),
               child:
-                  const Icon(Icons.more_vert, size: 20, color: Colors.white38),
+                  const Icon(Icons.more_vert, size: 20, color: textMuted),
             )
           : null,
       onTap: () => _navigate(entry),

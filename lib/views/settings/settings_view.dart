@@ -62,11 +62,11 @@ class _SettingsViewState extends State<SettingsView> {
       builder: (ctx) => AlertDialog(
         backgroundColor: bgCard,
         title: const Text('Clear Host Keys',
-            style: TextStyle(color: Colors.white)),
+            style: TextStyle(color: textBright)),
         content: const Text(
             'This will remove all cached host key fingerprints. '
             'You will be prompted to accept host keys again on next connect.',
-            style: TextStyle(color: Colors.white70)),
+            style: TextStyle(color: textDim)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -127,9 +127,9 @@ class _SettingsViewState extends State<SettingsView> {
         builder: (ctx) => AlertDialog(
           backgroundColor: bgCard,
           title: const Text('Import Backup',
-              style: TextStyle(color: Colors.white)),
+              style: TextStyle(color: textBright)),
           content: const Text('How should existing data be handled?',
-              style: TextStyle(color: Colors.white70)),
+              style: TextStyle(color: textDim)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -165,8 +165,7 @@ class _SettingsViewState extends State<SettingsView> {
       backgroundColor: bgDark,
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: bgCard,
-        foregroundColor: Colors.white,
+        backgroundColor: bgSidebar,
       ),
       body: !_loaded
           ? const Center(child: CircularProgressIndicator())
@@ -177,14 +176,14 @@ class _SettingsViewState extends State<SettingsView> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.person_outline,
-                      color: Colors.white54),
+                      color: textDim),
                   title: const Text('Unix Shells Account',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: textBright)),
                   subtitle: const Text(
                       'Sign in for remote access and device discovery',
-                      style: TextStyle(color: Colors.white38, fontSize: 12)),
+                      style: TextStyle(color: textMuted, fontSize: 12)),
                   trailing: const Icon(Icons.arrow_forward_ios,
-                      size: 14, color: Colors.white24),
+                      size: 14, color: borderColor),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const AccountView()),
                   ),
@@ -205,23 +204,23 @@ class _SettingsViewState extends State<SettingsView> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.upload_outlined,
-                      color: Colors.white54),
+                      color: textDim),
                   title: const Text('Export Backup',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: textBright)),
                   subtitle: const Text(
                       'Save connections, keys, and settings to a file',
-                      style: TextStyle(color: Colors.white38, fontSize: 12)),
+                      style: TextStyle(color: textMuted, fontSize: 12)),
                   onTap: _exportBackup,
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.download_outlined,
-                      color: Colors.white54),
+                      color: textDim),
                   title: const Text('Import Backup',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: textBright)),
                   subtitle: const Text(
                       'Restore from a backup file',
-                      style: TextStyle(color: Colors.white38, fontSize: 12)),
+                      style: TextStyle(color: textMuted, fontSize: 12)),
                   onTap: _importBackup,
                 ),
 
@@ -230,12 +229,12 @@ class _SettingsViewState extends State<SettingsView> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.key_off_outlined,
-                      color: Colors.white54),
+                      color: textDim),
                   title: const Text('Clear Host Keys',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: textBright)),
                   subtitle: const Text(
                       'Remove cached SSH host key fingerprints',
-                      style: TextStyle(color: Colors.white38, fontSize: 12)),
+                      style: TextStyle(color: textMuted, fontSize: 12)),
                   onTap: _clearHostKeys,
                 ),
 
@@ -244,23 +243,23 @@ class _SettingsViewState extends State<SettingsView> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Version',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: textBright)),
                   subtitle: const Text('1.0.0',
-                      style: TextStyle(color: Colors.white38)),
+                      style: TextStyle(color: textMuted)),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Website',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: textBright)),
                   subtitle: const Text('unixshells.com',
-                      style: TextStyle(color: Colors.blue)),
+                      style: TextStyle(color: accent)),
                   onTap: () =>
                       launchUrl(Uri.parse('https://unixshells.com')),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Licenses',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: textBright)),
                   onTap: () => showLicensePage(
                     context: context,
                     applicationName: 'Unix Shells',
@@ -293,7 +292,7 @@ class _SettingsViewState extends State<SettingsView> {
                 color: theme.background,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: selected ? Colors.blue : Colors.white12,
+                  color: selected ? accent : borderColor,
                   width: selected ? 2 : 1,
                 ),
               ),
@@ -341,7 +340,7 @@ class _SettingsViewState extends State<SettingsView> {
   Widget _buildFontSizeSlider() {
     return Row(
       children: [
-        const Text('Size', style: TextStyle(color: Colors.white70)),
+        const Text('Size', style: TextStyle(color: textDim)),
         Expanded(
           child: Slider(
             value: _fontSize,
@@ -356,7 +355,7 @@ class _SettingsViewState extends State<SettingsView> {
           ),
         ),
         Text('${_fontSize.round()}',
-            style: const TextStyle(color: Colors.white54, fontSize: 13)),
+            style: const TextStyle(color: textDim, fontSize: 13)),
       ],
     );
   }
@@ -365,7 +364,7 @@ class _SettingsViewState extends State<SettingsView> {
     return DropdownButtonFormField<String>(
       initialValue: _fontFamily,
       dropdownColor: bgCard,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: textBright),
       items: _fontFamilies
           .map((f) => DropdownMenuItem(
                 value: f,
@@ -379,13 +378,13 @@ class _SettingsViewState extends State<SettingsView> {
       },
       decoration: InputDecoration(
         labelText: 'Font Family',
-        labelStyle: const TextStyle(color: Colors.white54),
+        labelStyle: const TextStyle(color: textDim),
         enabledBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.white24),
+          borderSide: const BorderSide(color: borderColor),
           borderRadius: BorderRadius.circular(8),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.blue),
+          borderSide: const BorderSide(color: accent),
           borderRadius: BorderRadius.circular(8),
         ),
         filled: true,
@@ -399,7 +398,7 @@ class _SettingsViewState extends State<SettingsView> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(text,
           style: const TextStyle(
-              color: Colors.white54,
+              color: textDim,
               fontSize: 13,
               fontWeight: FontWeight.w600)),
     );

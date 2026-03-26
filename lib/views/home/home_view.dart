@@ -85,9 +85,9 @@ class _HomeViewState extends State<HomeView>
       builder: (ctx) => AlertDialog(
         backgroundColor: bgCard,
         title: const Text('Delete Connection',
-            style: TextStyle(color: Colors.white)),
+            style: TextStyle(color: textBright)),
         content: Text('Delete "${conn.label}"?',
-            style: const TextStyle(color: Colors.white70)),
+            style: const TextStyle(color: textDim)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -159,10 +159,10 @@ class _HomeViewState extends State<HomeView>
         title: _searching
             ? TextField(
                 autofocus: true,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: textBright),
                 decoration: const InputDecoration(
                   hintText: 'Search connections...',
-                  hintStyle: TextStyle(color: Colors.white38),
+                  hintStyle: TextStyle(color: textMuted),
                   border: InputBorder.none,
                 ),
                 onChanged: (v) => setState(() => _searchQuery = v),
@@ -220,13 +220,7 @@ class _HomeViewState extends State<HomeView>
               ],
             ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue,
-        onPressed: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ConnectView()),
-          );
-          _loadConnections();
-        },
+        onPressed: () => _showAddMenu(context),
         child: const Icon(Icons.add),
       ),
     );
@@ -331,14 +325,14 @@ class _HomeViewState extends State<HomeView>
             children: [
               Text('${device.name} / $sessionName',
                   style: const TextStyle(
-                      color: Colors.white,
+                      color: textBright,
                       fontSize: 20,
                       fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Use Mosh',
-                    style: TextStyle(color: Colors.white)),
+                    style: TextStyle(color: textBright)),
                 value: useMosh,
                 onChanged: (v) => setSheetState(() => useMosh = v),
               ),
@@ -347,22 +341,22 @@ class _HomeViewState extends State<HomeView>
                 DropdownButtonFormField<String>(
                   initialValue: keyId,
                   dropdownColor: bgCard,
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(color: textBright),
                   items: keys.map((k) => DropdownMenuItem(
                         value: k.id,
                         child: Text(k.label,
-                            style: const TextStyle(color: Colors.white)),
+                            style: const TextStyle(color: textBright)),
                       )).toList(),
                   onChanged: (v) => setSheetState(() => keyId = v),
                   decoration: InputDecoration(
                     labelText: 'SSH Key',
-                    labelStyle: const TextStyle(color: Colors.white54),
+                    labelStyle: const TextStyle(color: textDim),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Colors.white24),
+                      borderSide: const BorderSide(color: borderColor),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Colors.blue),
+                      borderSide: const BorderSide(color: accent),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     filled: true,
@@ -374,7 +368,7 @@ class _HomeViewState extends State<HomeView>
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                  style: ElevatedButton.styleFrom(backgroundColor: accent),
                   onPressed: () async {
                     final newPrefs = <String, dynamic>{
                       'useMosh': useMosh,
@@ -385,7 +379,7 @@ class _HomeViewState extends State<HomeView>
                     if (ctx.mounted) Navigator.pop(ctx);
                   },
                   child: const Text('Save',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: textBright)),
                 ),
               ),
               const SizedBox(height: 8),
@@ -397,7 +391,7 @@ class _HomeViewState extends State<HomeView>
                     if (ctx.mounted) Navigator.pop(ctx);
                   },
                   child: const Text('Reset Host Key',
-                      style: TextStyle(color: Colors.white38, fontSize: 13)),
+                      style: TextStyle(color: textMuted, fontSize: 13)),
                 ),
               ),
             ],
@@ -437,31 +431,31 @@ class _HomeViewState extends State<HomeView>
             children: [
               Text(device.name,
                   style: const TextStyle(
-                      color: Colors.white,
+                      color: textBright,
                       fontSize: 20,
                       fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Use Mosh',
-                    style: TextStyle(color: Colors.white)),
+                    style: TextStyle(color: textBright)),
                 value: useMosh,
                 onChanged: (v) => setSheetState(() => useMosh = v),
               ),
               TextField(
                 controller: sessionCtrl,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: textBright),
                 decoration: InputDecoration(
                   labelText: 'Session Name',
-                  labelStyle: const TextStyle(color: Colors.white54),
+                  labelStyle: const TextStyle(color: textDim),
                   hintText: 'default',
-                  hintStyle: const TextStyle(color: Colors.white24),
+                  hintStyle: const TextStyle(color: borderColor),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.white24),
+                    borderSide: const BorderSide(color: borderColor),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.blue),
+                    borderSide: const BorderSide(color: accent),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   filled: true,
@@ -473,22 +467,22 @@ class _HomeViewState extends State<HomeView>
                 DropdownButtonFormField<String>(
                   initialValue: keyId,
                   dropdownColor: bgCard,
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(color: textBright),
                   items: keys.map((k) => DropdownMenuItem(
                         value: k.id,
                         child: Text(k.label,
-                            style: const TextStyle(color: Colors.white)),
+                            style: const TextStyle(color: textBright)),
                       )).toList(),
                   onChanged: (v) => setSheetState(() => keyId = v),
                   decoration: InputDecoration(
                     labelText: 'SSH Key',
-                    labelStyle: const TextStyle(color: Colors.white54),
+                    labelStyle: const TextStyle(color: textDim),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Colors.white24),
+                      borderSide: const BorderSide(color: borderColor),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Colors.blue),
+                      borderSide: const BorderSide(color: accent),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     filled: true,
@@ -500,7 +494,7 @@ class _HomeViewState extends State<HomeView>
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                  style: ElevatedButton.styleFrom(backgroundColor: accent),
                   onPressed: () async {
                     final newPrefs = <String, dynamic>{
                       'useMosh': useMosh,
@@ -512,7 +506,7 @@ class _HomeViewState extends State<HomeView>
                     if (ctx.mounted) Navigator.pop(ctx);
                   },
                   child: const Text('Save',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: textBright)),
                 ),
               ),
             ],
@@ -548,13 +542,13 @@ class _HomeViewState extends State<HomeView>
                 Center(
                   child: Column(
                     children: [
-                      Icon(Icons.cloud_outlined, size: 64, color: Colors.white24),
+                      Icon(Icons.cloud_outlined, size: 64, color: borderColor),
                       SizedBox(height: 16),
                       Text('No devices online',
-                          style: TextStyle(color: Colors.white38, fontSize: 16)),
+                          style: TextStyle(color: textMuted, fontSize: 16)),
                       SizedBox(height: 8),
                       Text('Sign in and start latch on a machine',
-                          style: TextStyle(color: Colors.white24, fontSize: 14)),
+                          style: TextStyle(color: borderColor, fontSize: 14)),
                     ],
                   ),
                 ),
@@ -579,30 +573,30 @@ class _HomeViewState extends State<HomeView>
                   return [
                     ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: Colors.green.withValues(alpha: 0.2),
-                        child: const Icon(Icons.computer, color: Colors.green, size: 18),
+                        backgroundColor: accent.withValues(alpha: 0.2),
+                        child: const Icon(Icons.computer, color: accent, size: 18),
                       ),
                       title: Text(device.name,
-                          style: const TextStyle(color: Colors.white, fontSize: 15)),
+                          style: const TextStyle(color: textBright, fontSize: 15)),
                       subtitle: Text(
                           alive.isEmpty
                               ? 'no sessions'
                               : '${alive.length} session${alive.length == 1 ? '' : 's'}',
-                          style: const TextStyle(color: Colors.white38, fontSize: 13)),
+                          style: const TextStyle(color: textMuted, fontSize: 13)),
                     ),
                     ...alive.map((session) => ListTile(
                           contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                          leading: const Icon(Icons.terminal, color: Colors.white38, size: 20),
+                          leading: const Icon(Icons.terminal, color: textMuted, size: 20),
                           title: Text(session.name,
-                              style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                              style: const TextStyle(color: textDim, fontSize: 14)),
                           subtitle: session.title.isNotEmpty
                               ? Text(session.title,
-                                  style: const TextStyle(color: Colors.white30, fontSize: 12),
+                                  style: const TextStyle(color: textMuted, fontSize: 12),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis)
                               : null,
                           trailing: PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert, color: Colors.white38),
+                            icon: const Icon(Icons.more_vert, color: textMuted),
                             color: bgCard,
                             onSelected: (value) {
                               if (value == 'edit') _editSessionPrefs(device, session.name);
@@ -610,7 +604,7 @@ class _HomeViewState extends State<HomeView>
                             itemBuilder: (_) => const [
                               PopupMenuItem(
                                 value: 'edit',
-                                child: Text('Edit', style: TextStyle(color: Colors.white)),
+                                child: Text('Edit', style: TextStyle(color: textBright)),
                               ),
                             ],
                           ),
@@ -639,7 +633,7 @@ class _HomeViewState extends State<HomeView>
                     },
                     onResetHostKey: () => _resetHostKeyForConnection(conn),
                     trailing: isOnline
-                        ? const Icon(Icons.circle, color: Colors.green, size: 8)
+                        ? const Icon(Icons.circle, color: accent, size: 8)
                         : null,
                   );
                 }),
@@ -656,7 +650,63 @@ class _HomeViewState extends State<HomeView>
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Text(text,
           style: const TextStyle(
-              color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w600)),
+              color: textDim, fontSize: 12, fontWeight: FontWeight.w600)),
+    );
+  }
+
+  void _showAddMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 32, height: 4, margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(color: textMuted, borderRadius: BorderRadius.circular(2)),
+              ),
+              _addMenuItem(ctx, Icons.terminal, 'SSH connection', 'Connect to a host via SSH', () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ConnectView()),
+                ).then((_) => _loadConnections());
+              }),
+              _addMenuItem(ctx, Icons.cloud_outlined, 'Relay device', 'Add a device via latch relay', () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ConnectView()),
+                ).then((_) => _loadConnections());
+              }),
+              _addMenuItem(ctx, Icons.dns_outlined, 'New shell', 'Provision a managed Linux VM', () {
+                Navigator.pop(ctx);
+                _tabController.animateTo(2); // Switch to Shells tab
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _addMenuItem(BuildContext ctx, IconData icon, String title, String subtitle, VoidCallback onTap) {
+    return ListTile(
+      leading: Container(
+        width: 40, height: 40,
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: accent, size: 20),
+      ),
+      title: Text(title, style: const TextStyle(color: textBright, fontSize: 14, fontWeight: FontWeight.w500)),
+      subtitle: Text(subtitle, style: const TextStyle(color: textMuted, fontSize: 12)),
+      onTap: onTap,
     );
   }
 
@@ -672,16 +722,16 @@ class _HomeViewState extends State<HomeView>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.terminal, size: 64, color: Colors.white24),
+                Icon(Icons.terminal, size: 64, color: borderColor),
                 SizedBox(height: 16),
                 Text(
                   'No active sessions',
-                  style: TextStyle(color: Colors.white38, fontSize: 16),
+                  style: TextStyle(color: textMuted, fontSize: 16),
                 ),
                 SizedBox(height: 8),
                 Text(
                   'Connect to a server to start one',
-                  style: TextStyle(color: Colors.white24, fontSize: 14),
+                  style: TextStyle(color: borderColor, fontSize: 14),
                 ),
               ],
             ),
@@ -704,23 +754,23 @@ class _HomeViewState extends State<HomeView>
             return ListTile(
               leading: CircleAvatar(
                 backgroundColor:
-                    isRelay ? Colors.blue.withValues(alpha: 0.2) : bgButton,
+                    isRelay ? accent.withValues(alpha: 0.2) : bgButton,
                 child: Icon(
                   isRelay ? Icons.cloud : Icons.computer,
-                  color: isRelay ? Colors.blue : Colors.white54,
+                  color: isRelay ? accent : textDim,
                   size: 20,
                 ),
               ),
               title: Text(
                 session.label,
-                style: const TextStyle(color: Colors.white, fontSize: 15),
+                style: const TextStyle(color: textBright, fontSize: 15),
               ),
               subtitle: Text(
                 '${session.connection.destination} · $elapsed',
-                style: const TextStyle(color: Colors.white38, fontSize: 13),
+                style: const TextStyle(color: textMuted, fontSize: 13),
               ),
               trailing: const Icon(Icons.arrow_forward_ios,
-                  size: 14, color: Colors.white24),
+                  size: 14, color: borderColor),
               onTap: () => _returnToTerminals(i),
             );
           },
@@ -735,19 +785,19 @@ class _HomeViewState extends State<HomeView>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.terminal, size: 64, color: Colors.white24),
+            const Icon(Icons.terminal, size: 64, color: borderColor),
             const SizedBox(height: 16),
             Text(
               _searchQuery.isEmpty
                   ? 'No connections yet'
                   : 'No matches',
-              style: const TextStyle(color: Colors.white38, fontSize: 16),
+              style: const TextStyle(color: textMuted, fontSize: 16),
             ),
             if (_searchQuery.isEmpty) ...[
               const SizedBox(height: 8),
               const Text(
                 'Tap + to add one',
-                style: TextStyle(color: Colors.white24, fontSize: 14),
+                style: TextStyle(color: borderColor, fontSize: 14),
               ),
             ],
           ],

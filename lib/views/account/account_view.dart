@@ -96,7 +96,7 @@ class _AccountViewState extends State<AccountView> {
       appBar: AppBar(
         title: const Text('Account'),
         backgroundColor: bgCard,
-        foregroundColor: Colors.white,
+        foregroundColor: textBright,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -113,12 +113,12 @@ class _AccountViewState extends State<AccountView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_outlined, size: 80, color: Colors.white24),
+            const Icon(Icons.cloud_outlined, size: 80, color: borderColor),
             const SizedBox(height: 24),
             const Text(
               'Unix Shells',
               style: TextStyle(
-                  color: Colors.white,
+                  color: textBright,
                   fontSize: 24,
                   fontWeight: FontWeight.bold),
             ),
@@ -126,14 +126,14 @@ class _AccountViewState extends State<AccountView> {
             const Text(
               'Access your machines from anywhere.\nSSH through NAT, no port forwarding needed.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white54, fontSize: 14),
+              style: TextStyle(color: textDim, fontSize: 14),
             ),
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: accent,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 onPressed: _busy ? null : _showSigninSheet,
@@ -144,18 +144,18 @@ class _AccountViewState extends State<AccountView> {
                           const SizedBox(
                             width: 20, height: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white54),
+                                strokeWidth: 2, color: textDim),
                           ),
                           if (_busyMessage != null) ...[
                             const SizedBox(height: 8),
                             Text(_busyMessage!,
                                 style: const TextStyle(
-                                    color: Colors.white54, fontSize: 12)),
+                                    color: textDim, fontSize: 12)),
                           ],
                         ],
                       )
                     : const Text('Sign In',
-                        style: TextStyle(fontSize: 16, color: Colors.white)),
+                        style: TextStyle(fontSize: 16, color: textBright)),
               ),
             ),
           ],
@@ -181,12 +181,12 @@ class _AccountViewState extends State<AccountView> {
               children: [
                 Text(_account!.username,
                     style: const TextStyle(
-                        color: Colors.white,
+                        color: textBright,
                         fontSize: 20,
                         fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text(_account!.email,
-                    style: const TextStyle(color: Colors.white54)),
+                    style: const TextStyle(color: textDim)),
                 const SizedBox(height: 8),
                 Container(
                   padding:
@@ -214,7 +214,7 @@ class _AccountViewState extends State<AccountView> {
           const SizedBox(height: 24),
           const Text('Devices',
               style: TextStyle(
-                  color: Colors.white54,
+                  color: textDim,
                   fontSize: 13,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
@@ -222,19 +222,19 @@ class _AccountViewState extends State<AccountView> {
             const Padding(
               padding: EdgeInsets.all(16),
               child: Text('No devices registered',
-                  style: TextStyle(color: Colors.white38)),
+                  style: TextStyle(color: textMuted)),
             ),
           ..._devices.map((d) => ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.blue.withValues(alpha: 0.2),
+                  backgroundColor: accent.withValues(alpha: 0.2),
                   child: const Icon(Icons.computer,
-                      color: Colors.blue, size: 20),
+                      color: accent, size: 20),
                 ),
                 title: Text(d.name,
-                    style: const TextStyle(color: Colors.white)),
+                    style: const TextStyle(color: textBright)),
                 subtitle: Text(d.addedAt,
                     style: const TextStyle(
-                        color: Colors.white38, fontSize: 12)),
+                        color: textMuted, fontSize: 12)),
               )),
           const SizedBox(height: 24),
           TextButton(
@@ -281,43 +281,43 @@ class _AccountViewState extends State<AccountView> {
                 children: [
                   const Text('Sign In',
                       style: TextStyle(
-                          color: Colors.white,
+                          color: textBright,
                           fontSize: 20,
                           fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   const Text('Enter your username. We\'ll email you an approval link.',
-                      style: TextStyle(color: Colors.white54)),
+                      style: TextStyle(color: textDim)),
                   const SizedBox(height: 16),
                   _sheetField(usernameCtrl, 'Username'),
                   const SizedBox(height: 4),
                   if (keys.isNotEmpty) ...[
                     const Text('SSH Key',
-                        style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        style: TextStyle(color: textDim, fontSize: 12)),
                     const SizedBox(height: 4),
                     DropdownButtonFormField<String>(
                       initialValue: selectedKeyId,
                       dropdownColor: bgCard,
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(color: textBright),
                       items: [
                         ...keys.map((k) => DropdownMenuItem(
                               value: k.id,
                               child: Text(k.label,
-                                  style: const TextStyle(color: Colors.white)),
+                                  style: const TextStyle(color: textBright)),
                             )),
                         const DropdownMenuItem(
                           value: '_generate',
                           child: Text('Generate new key',
-                              style: TextStyle(color: Colors.blue)),
+                              style: TextStyle(color: accent)),
                         ),
                       ],
                       onChanged: (v) => setSheetState(() => selectedKeyId = v),
                       decoration: InputDecoration(
                         enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.white24),
+                          borderSide: const BorderSide(color: borderColor),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: Colors.blue),
+                          borderSide: const BorderSide(color: accent),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         filled: true,
@@ -330,7 +330,7 @@ class _AccountViewState extends State<AccountView> {
                     width: double.infinity,
                     child: ElevatedButton(
                       style:
-                          ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                          ElevatedButton.styleFrom(backgroundColor: accent),
                       onPressed: () {
                         final username = usernameCtrl.text.trim();
                         if (username.isEmpty) return;
@@ -338,7 +338,7 @@ class _AccountViewState extends State<AccountView> {
                         _startSignin(username, selectedKeyId);
                       },
                       child: const Text('Sign In',
-                          style: TextStyle(color: Colors.white)),
+                          style: TextStyle(color: textBright)),
                     ),
                   ),
                 ],
@@ -435,16 +435,16 @@ class _AccountViewState extends State<AccountView> {
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: ctrl,
-        style: const TextStyle(color: Colors.white),
+        style: const TextStyle(color: textBright),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white38),
+          hintStyle: const TextStyle(color: textMuted),
           enabledBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: Colors.white24),
+            borderSide: const BorderSide(color: borderColor),
             borderRadius: BorderRadius.circular(8),
           ),
           focusedBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: Colors.blue),
+            borderSide: const BorderSide(color: accent),
             borderRadius: BorderRadius.circular(8),
           ),
           filled: true,
@@ -460,9 +460,9 @@ class _AccountViewState extends State<AccountView> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: bgCard,
-        title: const Text('Sign Out', style: TextStyle(color: Colors.white)),
+        title: const Text('Sign Out', style: TextStyle(color: textBright)),
         content: const Text('Are you sure you want to sign out?',
-            style: TextStyle(color: Colors.white70)),
+            style: TextStyle(color: textDim)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),

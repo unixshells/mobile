@@ -162,7 +162,7 @@ class _PrefixDrawerState extends State<PrefixDrawer>
               child: Text(
                 'Prefix Keys',
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: textDim,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
@@ -182,7 +182,7 @@ class _PrefixDrawerState extends State<PrefixDrawer>
               child: Text(
                 'Common Sequences',
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: textDim,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
@@ -241,7 +241,7 @@ class _PrefixDrawerState extends State<PrefixDrawer>
                 Text(
                   config.description,
                   style: const TextStyle(
-                    color: Colors.white54,
+                    color: textDim,
                     fontSize: 13,
                   ),
                 ),
@@ -269,7 +269,7 @@ class _PrefixDrawerState extends State<PrefixDrawer>
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white38, fontSize: 13),
+              style: const TextStyle(color: textMuted, fontSize: 13),
             ),
           ),
         ),

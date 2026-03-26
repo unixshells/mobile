@@ -41,14 +41,14 @@ class _KeyListViewState extends State<KeyListView> {
       builder: (ctx) => AlertDialog(
         backgroundColor: bgCard,
         title: const Text('Generate SSH Key',
-            style: TextStyle(color: Colors.white)),
+            style: TextStyle(color: textBright)),
         content: TextField(
           controller: labelCtrl,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: textBright),
           decoration: const InputDecoration(
             hintText: 'Key label (e.g. iphone)',
-            hintStyle: TextStyle(color: Colors.white38),
+            hintStyle: TextStyle(color: textMuted),
           ),
         ),
         actions: [
@@ -77,9 +77,9 @@ class _KeyListViewState extends State<KeyListView> {
       builder: (ctx) => AlertDialog(
         backgroundColor: bgCard,
         title:
-            const Text('Delete Key', style: TextStyle(color: Colors.white)),
+            const Text('Delete Key', style: TextStyle(color: textBright)),
         content: Text('Delete "${key.label}"? This cannot be undone.',
-            style: const TextStyle(color: Colors.white70)),
+            style: const TextStyle(color: textDim)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -121,22 +121,22 @@ class _KeyListViewState extends State<KeyListView> {
       builder: (ctx) => AlertDialog(
         backgroundColor: bgCard,
         title: const Text('Import SSH Key',
-            style: TextStyle(color: Colors.white)),
+            style: TextStyle(color: textBright)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: labelCtrl,
               autofocus: true,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: textBright),
               decoration: const InputDecoration(
                 hintText: 'Key label',
-                hintStyle: TextStyle(color: Colors.white38),
+                hintStyle: TextStyle(color: textMuted),
               ),
             ),
             const SizedBox(height: 8),
             Text('File: ${file.name}',
-                style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                style: const TextStyle(color: textMuted, fontSize: 12)),
           ],
         ),
         actions: [
@@ -178,7 +178,7 @@ class _KeyListViewState extends State<KeyListView> {
       appBar: AppBar(
         title: const Text('SSH Keys'),
         backgroundColor: bgCard,
-        foregroundColor: Colors.white,
+        foregroundColor: textBright,
         actions: [
           IconButton(
             icon: const Icon(Icons.file_upload_outlined),
@@ -194,15 +194,15 @@ class _KeyListViewState extends State<KeyListView> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.vpn_key,
-                          size: 64, color: Colors.white24),
+                          size: 64, color: borderColor),
                       const SizedBox(height: 16),
                       const Text('No SSH keys',
                           style:
-                              TextStyle(color: Colors.white38, fontSize: 16)),
+                              TextStyle(color: textMuted, fontSize: 16)),
                       const SizedBox(height: 8),
                       const Text('Generate one to get started',
                           style:
-                              TextStyle(color: Colors.white24, fontSize: 14)),
+                              TextStyle(color: borderColor, fontSize: 14)),
                     ],
                   ),
                 )
@@ -214,20 +214,20 @@ class _KeyListViewState extends State<KeyListView> {
                       leading: const CircleAvatar(
                         backgroundColor: bgButton,
                         child: Icon(Icons.vpn_key,
-                            color: Colors.white54, size: 20),
+                            color: textDim, size: 20),
                       ),
                       title: Text(key.label,
-                          style: const TextStyle(color: Colors.white)),
+                          style: const TextStyle(color: textBright)),
                       subtitle: Text(key.fingerprint,
                           style: const TextStyle(
-                              color: Colors.white38, fontSize: 12,
+                              color: textMuted, fontSize: 12,
                               fontFamily: 'monospace')),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
                             icon: const Icon(Icons.copy,
-                                color: Colors.white38, size: 20),
+                                color: textMuted, size: 20),
                             onPressed: () {
                               Clipboard.setData(
                                   ClipboardData(text: key.publicKeyOpenSSH));
@@ -250,11 +250,11 @@ class _KeyListViewState extends State<KeyListView> {
                           builder: (ctx) => AlertDialog(
                             backgroundColor: bgCard,
                             title: Text(key.label,
-                                style: const TextStyle(color: Colors.white)),
+                                style: const TextStyle(color: textBright)),
                             content: SelectableText(
                               key.publicKeyOpenSSH,
                               style: const TextStyle(
-                                color: Colors.white70,
+                                color: textDim,
                                 fontFamily: 'monospace',
                                 fontSize: 12,
                               ),
@@ -272,7 +272,7 @@ class _KeyListViewState extends State<KeyListView> {
                   },
                 ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue,
+        backgroundColor: accent,
         onPressed: _generateKey,
         child: const Icon(Icons.add),
       ),
