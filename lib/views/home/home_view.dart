@@ -168,13 +168,8 @@ class _HomeViewState extends State<HomeView>
                 onChanged: (v) => setState(() => _searchQuery = v),
               )
             : const Text('Unix Shells'),
-        backgroundColor: bgCard,
-        foregroundColor: Colors.white,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.blue,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white54,
           tabs: [
             const Tab(text: 'All'),
             const Tab(text: 'Relay'),

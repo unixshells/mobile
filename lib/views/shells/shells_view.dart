@@ -190,10 +190,10 @@ class _ShellsTabState extends State<ShellsTab> {
                       ).toList(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(border: Border.all(color: const Color(0xFF30363d))),
+                        decoration: BoxDecoration(border: Border.all(color: const Color(0xFF21262d))),
                         child: Text(
                           _iap.purchasing ? 'Processing...' : 'New Shell',
-                          style: const TextStyle(color: Color(0xFFc9d1d9), fontWeight: FontWeight.w500, fontSize: 13),
+                          style: const TextStyle(color: Color(0xFFF0F6FC), fontWeight: FontWeight.w500, fontSize: 13),
                         ),
                       ),
                     )
@@ -205,8 +205,8 @@ class _ShellsTabState extends State<ShellsTab> {
                       ],
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(border: Border.all(color: const Color(0xFF30363d))),
-                        child: const Text('New Shell', style: TextStyle(color: Color(0xFFc9d1d9), fontWeight: FontWeight.w500, fontSize: 13)),
+                        decoration: BoxDecoration(border: Border.all(color: const Color(0xFF21262d))),
+                        child: const Text('New Shell', style: TextStyle(color: Color(0xFFF0F6FC), fontWeight: FontWeight.w500, fontSize: 13)),
                       ),
                     ),
             ],
@@ -215,7 +215,7 @@ class _ShellsTabState extends State<ShellsTab> {
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
-              color: const Color(0xFF161b22),
+              color: const Color(0xFF1c222c),
               child: Text(_message!, style: const TextStyle(fontSize: 13, color: Color(0xFF8b949e))),
             ),
           ],
@@ -239,16 +239,16 @@ class _ShellsTabState extends State<ShellsTab> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF161b22),
-        border: Border.all(color: const Color(0xFF30363d)),
+        color: const Color(0xFF1c222c),
+        border: Border.all(color: const Color(0xFF21262d)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Expanded(child: Text(shell.id, style: const TextStyle(fontFamily: 'monospace', fontSize: 14, fontWeight: FontWeight.w600))),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            color: shell.isRunning ? const Color(0xFF58a659).withValues(alpha: 0.15) : const Color(0xFF484f58).withValues(alpha: 0.15),
-            child: Text(shell.state, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: shell.isRunning ? const Color(0xFF58a659) : const Color(0xFF484f58))),
+            color: shell.isRunning ? const Color(0xFF6bc26b).withValues(alpha: 0.15) : const Color(0xFF484f58).withValues(alpha: 0.15),
+            child: Text(shell.state, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: shell.isRunning ? const Color(0xFF6bc26b) : const Color(0xFF484f58))),
           ),
         ]),
         const SizedBox(height: 8),
@@ -270,7 +270,7 @@ class _ShellsTabState extends State<ShellsTab> {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(border: Border.all(color: danger ? Colors.red.withValues(alpha: 0.3) : const Color(0xFF30363d))),
+        decoration: BoxDecoration(border: Border.all(color: danger ? Colors.red.withValues(alpha: 0.3) : const Color(0xFF21262d))),
         child: Text(label, style: TextStyle(fontSize: 12, color: danger ? Colors.red.shade300 : const Color(0xFF8b949e))),
       ),
     );

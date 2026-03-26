@@ -67,9 +67,46 @@ class _UnixShellsAppState extends State<UnixShellsApp> {
           brightness: Brightness.dark,
           scaffoldBackgroundColor: bgDark,
           colorScheme: const ColorScheme.dark(
-            primary: Colors.blue,
+            primary: accent,
             surface: bgCard,
+            onPrimary: Color(0xFF0a0e14),
           ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: bgCard,
+            foregroundColor: textBright,
+            elevation: 0,
+            titleTextStyle: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: textBright,
+            ),
+          ),
+          tabBarTheme: const TabBarThemeData(
+            indicatorColor: accent,
+            labelColor: textBright,
+            unselectedLabelColor: textMuted,
+            labelStyle: TextStyle(fontFamily: 'monospace', fontSize: 12, fontWeight: FontWeight.w600),
+            unselectedLabelStyle: TextStyle(fontFamily: 'monospace', fontSize: 12),
+          ),
+          floatingActionButtonTheme: const FloatingActionButtonThemeData(
+            backgroundColor: accent,
+            foregroundColor: Color(0xFF0a0e14),
+          ),
+          dialogTheme: const DialogThemeData(
+            backgroundColor: bgCard,
+            titleTextStyle: TextStyle(fontFamily: 'monospace', fontSize: 15, fontWeight: FontWeight.w600, color: textBright),
+            contentTextStyle: TextStyle(fontSize: 13, color: textDim, height: 1.6),
+          ),
+          popupMenuTheme: const PopupMenuThemeData(
+            color: bgSurface,
+            textStyle: TextStyle(fontFamily: 'monospace', fontSize: 13, color: textDim),
+          ),
+          snackBarTheme: const SnackBarThemeData(
+            backgroundColor: bgSurface,
+            contentTextStyle: TextStyle(fontFamily: 'monospace', fontSize: 12, color: textBright),
+          ),
+          dividerColor: borderColor,
           useMaterial3: true,
         ),
         home: const HomeView(),

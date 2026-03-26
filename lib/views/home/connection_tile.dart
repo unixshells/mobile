@@ -25,65 +25,70 @@ class ConnectionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isRelay = connection.type == ConnectionType.relay;
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor:
-            isRelay ? Colors.blue.withValues(alpha: 0.2) : bgButton,
-        child: Icon(
-          isRelay ? Icons.cloud : Icons.computer,
-          color: isRelay ? Colors.blue : Colors.white54,
-          size: 20,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 1),
+      color: bgCard,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: isRelay ? accent.withValues(alpha: 0.12) : bgSurface,
+          ),
+          child: Icon(
+            isRelay ? Icons.cloud_outlined : Icons.terminal,
+            color: isRelay ? accent : textDim,
+            size: 18,
+          ),
         ),
-      ),
-      title: Text(
-        connection.label,
-        style: const TextStyle(color: Colors.white, fontSize: 15),
-      ),
-      subtitle: Text(
-        connection.sessionName != null && connection.sessionName!.isNotEmpty
-            ? '${connection.destination} · ${connection.sessionName}'
-            : connection.destination,
-        style: const TextStyle(color: Colors.white38, fontSize: 13),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (trailing != null) ...[
-            trailing!,
-            const SizedBox(width: 8),
-          ],
-          PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert, color: Colors.white38),
-        color: bgCard,
-        onSelected: (value) {
-          switch (value) {
-            case 'edit':
-              onEdit();
-            case 'delete':
-              onDelete();
-            case 'reset_host_key':
-              onResetHostKey?.call();
-          }
-        },
-        itemBuilder: (context) => [
-          const PopupMenuItem(
-            value: 'edit',
-            child: Text('Edit', style: TextStyle(color: Colors.white)),
+        title: Text(
+          connection.label,
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            color: textBright,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
-          if (onResetHostKey != null)
-            const PopupMenuItem(
-              value: 'reset_host_key',
-              child: Text('Reset Host Key', style: TextStyle(color: Colors.white)),
+        ),
+        subtitle: Text(
+          connection.sessionName != null && connection.sessionName!.isNotEmpty
+              ? '${connection.destination} · ${connection.sessionName}'
+              : connection.destination,
+          style: const TextStyle(fontFamily: 'monospace', color: textMuted, fontSize: 11),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (trailing != null) ...[
+              trailing!,
+              const SizedBox(width: 4),
+            ],
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: textMuted, size: 18),
+              onSelected: (value) {
+                switch (value) {
+                  case 'edit':
+                    onEdit();
+                  case 'delete':
+                    onDelete();
+                  case 'reset_host_key':
+                    onResetHostKey?.call();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'edit', child: Text('edit')),
+                if (onResetHostKey != null)
+                  const PopupMenuItem(value: 'reset_host_key', child: Text('reset host key')),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Text('delete', style: TextStyle(color: Colors.red)),
+                ),
+              ],
             ),
-          const PopupMenuItem(
-            value: 'delete',
-            child: Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-          ),
-        ],
+          ],
+        ),
+        onTap: onTap,
       ),
-      onTap: onTap,
     );
   }
 }
