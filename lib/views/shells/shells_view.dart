@@ -200,8 +200,8 @@ class _ShellsTabState extends State<ShellsTab> {
                   : PopupMenuButton<String>(
                       onSelected: _requestShell,
                       itemBuilder: (_) => [
-                        const PopupMenuItem(value: 'shell', child: Text('Shell — \$5/mo\n2GB / 1 vCPU / 10GB')),
-                        const PopupMenuItem(value: 'shell-plus', child: Text('Shell+ — \$10/mo\n4GB / 2 vCPU / 25GB')),
+                        const PopupMenuItem(value: 'shell', child: Text('Shell — \$6/mo\n2GB / 1 vCPU / 10GB')),
+                        const PopupMenuItem(value: 'shell-plus', child: Text('Shell+ — \$12/mo\n4GB / 2 vCPU / 25GB')),
                       ],
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
