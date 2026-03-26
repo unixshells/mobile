@@ -94,17 +94,6 @@ class _ShellsTabState extends State<ShellsTab> {
     }
   }
 
-  Future<void> _requestShell(String plan) async {
-    try {
-      final username = await _getUsername();
-      if (username == null) return;
-      final msg = await _api.requestShell(username: username, plan: plan);
-      _showMessage(msg);
-    } catch (e) {
-      _showMessage(e.toString());
-    }
-  }
-
   Future<void> _destroyShell(Shell shell) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -197,18 +186,7 @@ class _ShellsTabState extends State<ShellsTab> {
                         ),
                       ),
                     )
-                  : PopupMenuButton<String>(
-                      onSelected: _requestShell,
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(value: 'shell', child: Text('Shell — \$6/mo\n2GB / 1 vCPU / 10GB')),
-                        const PopupMenuItem(value: 'shell-plus', child: Text('Shell+ — \$12/mo\n4GB / 2 vCPU / 25GB')),
-                      ],
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(border: Border.all(color: const Color(0x0FFFFFFF))),
-                        child: const Text('New Shell', style: TextStyle(color: Color(0xFFe2e6ec), fontWeight: FontWeight.w500, fontSize: 13)),
-                      ),
-                    ),
+                  : const SizedBox.shrink(),
             ],
           ),
           if (_message != null) ...[
@@ -223,9 +201,12 @@ class _ShellsTabState extends State<ShellsTab> {
           if (_loading)
             const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
           else if (_shells.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(32),
-              child: Center(child: Text('No running shells.\nTap "New Shell" to provision one.', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF7c8594)))),
+            Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(child: Text(
+                _iap.available ? 'No running shells.\nTap "New Shell" to provision one.' : 'No running shells.\nPurchase a shell from the app store.',
+                textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF7c8594)),
+              )),
             )
           else
             ..._shells.map(_buildShellCard),
@@ -235,31 +216,164 @@ class _ShellsTabState extends State<ShellsTab> {
   }
 
   Widget _buildShellCard(Shell shell) {
+    return _ShellCard(
+      shell: shell,
+      api: _api,
+      getAuthToken: _getAuthToken,
+      onRestart: () => _restartShell(shell),
+      onDestroy: () => _destroyShell(shell),
+    );
+  }
+}
+
+class _ShellCard extends StatefulWidget {
+  final Shell shell;
+  final RelayApiService api;
+  final Future<String?> Function() getAuthToken;
+  final VoidCallback onRestart;
+  final VoidCallback onDestroy;
+
+  const _ShellCard({
+    required this.shell,
+    required this.api,
+    required this.getAuthToken,
+    required this.onRestart,
+    required this.onDestroy,
+  });
+
+  @override
+  State<_ShellCard> createState() => _ShellCardState();
+}
+
+class _ShellCardState extends State<_ShellCard> {
+  bool _keysExpanded = false;
+  List<Map<String, String>>? _keys;
+  bool _keysLoading = false;
+  final _addKeyCtrl = TextEditingController();
+
+  Future<void> _loadKeys() async {
+    setState(() => _keysLoading = true);
+    try {
+      final token = await widget.getAuthToken();
+      if (token == null) return;
+      final keys = await widget.api.listShellKeys(widget.shell.id, token: token);
+      if (mounted) setState(() { _keys = keys; _keysLoading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _keys = []; _keysLoading = false; });
+    }
+  }
+
+  Future<void> _addKey() async {
+    final pubkey = _addKeyCtrl.text.trim();
+    if (pubkey.isEmpty) return;
+    try {
+      final token = await widget.getAuthToken();
+      if (token == null) return;
+      await widget.api.addShellKey(widget.shell.id, pubkey, token: token);
+      _addKeyCtrl.clear();
+      _loadKeys();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shell = widget.shell;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF12141a),
         border: Border.all(color: const Color(0x0FFFFFFF)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Expanded(child: Text(shell.id, style: const TextStyle(fontFamily: 'monospace', fontSize: 14, fontWeight: FontWeight.w600))),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            color: shell.isRunning ? const Color(0xFF6aaa6a).withValues(alpha: 0.15) : const Color(0xFF4a5060).withValues(alpha: 0.15),
-            child: Text(shell.state, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: shell.isRunning ? const Color(0xFF6aaa6a) : const Color(0xFF4a5060))),
-          ),
-        ]),
-        const SizedBox(height: 8),
-        Text('${shell.plan} — ${shell.specs}', style: const TextStyle(fontSize: 12, color: Color(0xFF7c8594))),
-        if (shell.isRunning) ...[
-          const SizedBox(height: 12),
-          Row(children: [
-            _actionButton('Restart', () => _restartShell(shell)),
-            const SizedBox(width: 8),
-            _actionButton('Destroy', () => _destroyShell(shell), danger: true),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Expanded(child: Text(shell.id, style: const TextStyle(fontFamily: 'monospace', fontSize: 14, fontWeight: FontWeight.w600))),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                color: shell.isRunning ? const Color(0xFF6aaa6a).withValues(alpha: 0.15) : const Color(0xFF4a5060).withValues(alpha: 0.15),
+                child: Text(shell.state, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: shell.isRunning ? const Color(0xFF6aaa6a) : const Color(0xFF4a5060))),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            Text('${shell.plan} — ${shell.specs}', style: const TextStyle(fontSize: 12, color: Color(0xFF7c8594))),
+            if (shell.isRunning) ...[
+              const SizedBox(height: 12),
+              Row(children: [
+                _actionButton('Keys', () {
+                  setState(() => _keysExpanded = !_keysExpanded);
+                  if (_keysExpanded && _keys == null) _loadKeys();
+                }),
+                const SizedBox(width: 8),
+                _actionButton('Restart', widget.onRestart),
+                const SizedBox(width: 8),
+                _actionButton('Destroy', widget.onDestroy, danger: true),
+              ]),
+            ],
           ]),
+        ),
+        // Expandable keys panel
+        if (_keysExpanded) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Color(0x0FFFFFFF))),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const SizedBox(height: 12),
+              const Text('SSH keys on this shell', style: TextStyle(color: Color(0xFF7c8594), fontSize: 12, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              if (_keysLoading)
+                const Padding(padding: EdgeInsets.all(8), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))
+              else if (_keys != null && _keys!.isEmpty)
+                const Text('No keys found.', style: TextStyle(color: Color(0xFF4a5060), fontSize: 12))
+              else if (_keys != null)
+                ..._keys!.map((k) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '${k['type'] ?? ''} ${k['key'] ?? ''}${k['comment'] != null ? ' ${k['comment']}' : ''}',
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 10, color: Color(0xFF7c8594)),
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                  ),
+                )),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(
+                  child: TextField(
+                    controller: _addKeyCtrl,
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 11, color: Color(0xFFe2e6ec)),
+                    decoration: InputDecoration(
+                      hintText: 'ssh-ed25519 AAAA...',
+                      hintStyle: const TextStyle(color: Color(0xFF4a5060), fontSize: 11),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0x0FFFFFFF)), borderRadius: BorderRadius.circular(4)),
+                      focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: Color(0xFF6aaa6a)), borderRadius: BorderRadius.circular(4)),
+                      filled: true, fillColor: const Color(0xFF0b0c10),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _addKey,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6aaa6a),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text('Add', style: TextStyle(fontSize: 12, color: Color(0xFF0b0c10), fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ]),
+            ]),
+          ),
         ],
       ]),
     );

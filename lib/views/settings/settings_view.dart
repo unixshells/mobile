@@ -9,6 +9,7 @@ import '../../models/terminal_theme.dart';
 import '../../services/storage_service.dart';
 import '../../util/constants.dart';
 import '../account/account_view.dart';
+import '../keys/key_list_view.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -161,36 +162,26 @@ class _SettingsViewState extends State<SettingsView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: bgDark,
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: bgSidebar,
-      ),
-      body: !_loaded
+    return !_loaded
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
+          : Material(
+              color: bgDark,
+              child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _sectionHeader('Account'),
+                _sectionHeader('SSH Keys'),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.person_outline,
-                      color: textDim),
-                  title: const Text('Unix Shells Account',
-                      style: TextStyle(color: textBright)),
-                  subtitle: const Text(
-                      'Sign in for remote access and device discovery',
-                      style: TextStyle(color: textMuted, fontSize: 12)),
-                  trailing: const Icon(Icons.arrow_forward_ios,
-                      size: 14, color: borderColor),
+                  leading: const Icon(Icons.vpn_key_outlined, color: textDim),
+                  title: const Text('Manage Keys', style: TextStyle(color: textBright)),
+                  subtitle: const Text('Generate, import, and manage SSH keys', style: TextStyle(color: textMuted, fontSize: 12)),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: textMuted),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const AccountView()),
+                    MaterialPageRoute(builder: (_) => const KeyListView()),
                   ),
                 ),
 
                 const SizedBox(height: 24),
-                // Terminal section.
                 _sectionHeader('Terminal Theme'),
                 _buildThemePicker(),
                 const SizedBox(height: 16),
@@ -268,7 +259,7 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
               ],
             ),
-    );
+  );
   }
 
   Widget _buildThemePicker() {

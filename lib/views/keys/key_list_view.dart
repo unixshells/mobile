@@ -181,8 +181,14 @@ class _KeyListViewState extends State<KeyListView> {
         foregroundColor: textBright,
         actions: [
           IconButton(
-            icon: const Icon(Icons.file_upload_outlined),
+            icon: const Icon(Icons.file_upload_outlined, size: 20),
+            tooltip: 'Import key',
             onPressed: _importKey,
+          ),
+          IconButton(
+            icon: const Icon(Icons.add, size: 20),
+            tooltip: 'Generate key',
+            onPressed: _generateKey,
           ),
         ],
       ),
@@ -271,11 +277,6 @@ class _KeyListViewState extends State<KeyListView> {
                     );
                   },
                 ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: accent,
-        onPressed: _generateKey,
-        child: const Icon(Icons.add),
-      ),
     );
   }
 }

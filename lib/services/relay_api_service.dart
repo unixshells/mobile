@@ -172,6 +172,31 @@ class RelayApiService {
     );
   }
 
+  /// Create a new account with username, email, pubkey, and device name.
+  Future<Map<String, dynamic>> signup({
+    required String username,
+    required String email,
+    required String pubkey,
+    required String device,
+  }) async {
+    final resp = await _client.post(
+      Uri.parse('$_baseURL/api/signup'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': username,
+        'email': email,
+        'pubkey': pubkey,
+        'device': device,
+        'tos_accepted': true,
+      }),
+    ).timeout(_timeout);
+    if (resp.statusCode != 201) {
+      final body = jsonDecode(resp.body);
+      throw ApiException(body['error'] ?? 'signup failed', resp.statusCode);
+    }
+    return jsonDecode(resp.body) as Map<String, dynamic>;
+  }
+
   /// List user's shells. Requires auth token.
   Future<List<Shell>> listShells({required String token}) async {
     final resp = await _client.get(
@@ -240,6 +265,37 @@ class RelayApiService {
       throw ApiException(body['error'] ?? 'restart failed', resp.statusCode);
     }
     return 'Shell restarted';
+  }
+
+  /// List SSH keys on a shell's latch authorized_keys.
+  Future<List<Map<String, String>>> listShellKeys(String shellId, {required String token}) async {
+    final resp = await _client.get(
+      Uri.parse('$_baseURL/api/shells/$shellId/keys'),
+      headers: {'Authorization': 'Bearer $token'},
+    ).timeout(_timeout);
+    if (resp.statusCode != 200) {
+      throw ApiException('failed to list keys', resp.statusCode);
+    }
+    final body = jsonDecode(resp.body) as Map<String, dynamic>;
+    return (body['keys'] as List)
+        .map((k) => Map<String, String>.from(k as Map))
+        .toList();
+  }
+
+  /// Add an SSH key to a shell's latch authorized_keys.
+  Future<void> addShellKey(String shellId, String pubkey, {required String token}) async {
+    final resp = await _client.post(
+      Uri.parse('$_baseURL/api/shells/$shellId/keys'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'pubkey': pubkey}),
+    ).timeout(_timeout);
+    if (resp.statusCode != 200) {
+      final body = jsonDecode(resp.body);
+      throw ApiException(body['error'] ?? 'failed to add key', resp.statusCode);
+    }
   }
 
   /// Get account status and device list. Requires auth token (timestamp:signature).

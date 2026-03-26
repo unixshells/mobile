@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/account.dart';
 import '../../models/device.dart';
@@ -91,19 +92,8 @@ class _AccountViewState extends State<AccountView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: bgDark,
-      appBar: AppBar(
-        title: const Text('Account'),
-        backgroundColor: bgCard,
-        foregroundColor: textBright,
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _account == null
-              ? _buildSignedOut()
-              : _buildSignedIn(),
-    );
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    return _account == null ? _buildSignedOut() : _buildSignedIn();
   }
 
   Widget _buildSignedOut() {
@@ -124,7 +114,7 @@ class _AccountViewState extends State<AccountView> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Access your machines from anywhere.\nSSH through NAT, no port forwarding needed.',
+              'Sign in to discover your devices\nand manage your shells.',
               textAlign: TextAlign.center,
               style: TextStyle(color: textDim, fontSize: 14),
             ),
@@ -134,7 +124,9 @@ class _AccountViewState extends State<AccountView> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accent,
+                  foregroundColor: const Color(0xFF0b0c10),
                   padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: const RoundedRectangleBorder(),
                 ),
                 onPressed: _busy ? null : _showSigninSheet,
                 child: _busy
@@ -156,6 +148,21 @@ class _AccountViewState extends State<AccountView> {
                       )
                     : const Text('Sign In',
                         style: TextStyle(fontSize: 16, color: textBright)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: textDim,
+                  side: const BorderSide(color: borderColor),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: const RoundedRectangleBorder(),
+                ),
+                onPressed: _busy ? null : _showCreateAccountSheet,
+                child: const Text('Create Account',
+                    style: TextStyle(fontSize: 16)),
               ),
             ),
           ],
@@ -449,6 +456,174 @@ class _AccountViewState extends State<AccountView> {
           ),
           filled: true,
           fillColor: bgDark,
+        ),
+      ),
+    );
+  }
+
+  void _showCreateAccountSheet() {
+    final usernameCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final keyService = context.read<KeyService>();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: bgCard,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 24, right: 24, top: 24,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: FutureBuilder<List<SSHKeyPair>>(
+          future: keyService.list(),
+          builder: (ctx, snapshot) {
+            final keys = snapshot.data ?? [];
+            String? selectedKeyId = keys.isNotEmpty ? keys.first.id : null;
+            String? error;
+
+            return StatefulBuilder(
+              builder: (ctx, setSheetState) => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Create Account',
+                      style: TextStyle(color: textBright, fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Text('Create a Unix Shells account to manage devices and shells.',
+                      style: TextStyle(color: textDim)),
+                  const SizedBox(height: 16),
+                  _sheetField(usernameCtrl, 'Username'),
+                  _sheetField(emailCtrl, 'Email'),
+                  if (keys.isNotEmpty) ...[
+                    const Text('SSH Key', style: TextStyle(color: textDim, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedKeyId,
+                      dropdownColor: bgCard,
+                      style: const TextStyle(color: textBright),
+                      items: [
+                        ...keys.map((k) => DropdownMenuItem(
+                              value: k.id,
+                              child: Text(k.label, style: const TextStyle(color: textBright)),
+                            )),
+                        DropdownMenuItem(
+                          value: '_generate',
+                          child: Text('Generate new key', style: TextStyle(color: accent)),
+                        ),
+                      ],
+                      onChanged: (v) => setSheetState(() => selectedKeyId = v),
+                      decoration: InputDecoration(
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: borderColor),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: accent),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true, fillColor: bgDark,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ] else ...[
+                    const Text('An SSH key will be generated automatically.',
+                        style: TextStyle(color: textMuted, fontSize: 12)),
+                    const SizedBox(height: 12),
+                  ],
+                  if (error != null) ...[
+                    Text(error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                    const SizedBox(height: 8),
+                  ],
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accent,
+                        foregroundColor: const Color(0xFF0b0c10),
+                        shape: const RoundedRectangleBorder(),
+                      ),
+                      onPressed: () async {
+                        final username = usernameCtrl.text.trim().toLowerCase();
+                        final email = emailCtrl.text.trim();
+                        if (username.isEmpty || email.isEmpty) {
+                          setSheetState(() => error = 'Username and email are required.');
+                          return;
+                        }
+
+                        Navigator.pop(ctx);
+                        setState(() { _busy = true; _busyMessage = 'Creating account...'; });
+
+                        try {
+                          // Ensure we have a key.
+                          String keyId = selectedKeyId ?? '_generate';
+                          String pubKey;
+                          if (keyId == '_generate' || keys.isEmpty) {
+                            final kp = await keyService.generate('relay-$username');
+                            keyId = kp.id;
+                            pubKey = kp.publicKeyOpenSSH;
+                          } else {
+                            final kp = (await keyService.list()).firstWhere((k) => k.id == keyId);
+                            pubKey = kp.publicKeyOpenSSH;
+                          }
+                          final device = _deviceName();
+                          final api = context.read<RelayApiService>();
+
+                          // Call /api/signup to create account + register key.
+                          final resp = await api.signup(
+                            username: username,
+                            email: email,
+                            pubkey: pubKey,
+                            device: device,
+                          );
+
+                          // Save account locally.
+                          final storage = context.read<StorageService>();
+                          await storage.saveAccount(UnixShellsAccount(
+                            username: resp['username'] ?? username,
+                            email: email,
+                          ));
+                          await storage.saveSetting('relay_key_id', keyId);
+
+                          // Start discovery.
+                          if (mounted) {
+                            context.read<DiscoveryService>().refresh();
+                          }
+
+                          await _loadAccount();
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(e.toString())),
+                            );
+                          }
+                        } finally {
+                          if (mounted) setState(() { _busy = false; _busyMessage = null; });
+                        }
+                      },
+                      child: const Text('Create Account'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    children: [
+                      const Text('By creating an account you agree to the ', style: TextStyle(color: textMuted, fontSize: 11)),
+                      GestureDetector(
+                        onTap: () => launchUrl(Uri.parse('https://unixshells.com/terms.html')),
+                        child: const Text('Terms of Service', style: TextStyle(color: accent, fontSize: 11)),
+                      ),
+                      const Text(' and ', style: TextStyle(color: textMuted, fontSize: 11)),
+                      GestureDetector(
+                        onTap: () => launchUrl(Uri.parse('https://unixshells.com/privacy.html')),
+                        child: const Text('Privacy Policy', style: TextStyle(color: accent, fontSize: 11)),
+                      ),
+                      const Text('.', style: TextStyle(color: textMuted, fontSize: 11)),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

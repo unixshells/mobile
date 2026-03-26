@@ -131,18 +131,27 @@ class _ConnectViewState extends State<ConnectView> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SegmentedButton<ForwardType>(
-                segments: const [
-                  ButtonSegment(value: ForwardType.local, label: Text('Local')),
-                  ButtonSegment(
-                      value: ForwardType.remote, label: Text('Remote')),
+              Row(
+                children: [
+                  ...[ForwardType.local, ForwardType.remote].map((ft) {
+                    final sel = type == ft;
+                    return Expanded(child: GestureDetector(
+                      onTap: () => setDialogState(() => type = ft),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        margin: EdgeInsets.only(right: ft == ForwardType.local ? 8 : 0),
+                        decoration: BoxDecoration(
+                          color: sel ? accent.withValues(alpha: 0.12) : bgCard,
+                          border: Border.all(color: sel ? accent : borderColor),
+                        ),
+                        child: Center(child: Text(
+                          ft == ForwardType.local ? 'Local' : 'Remote',
+                          style: TextStyle(color: sel ? accent : textDim, fontSize: 13, fontWeight: sel ? FontWeight.w600 : FontWeight.w400),
+                        )),
+                      ),
+                    ));
+                  }),
                 ],
-                selected: {type},
-                onSelectionChanged: (v) =>
-                    setDialogState(() => type = v.first),
-                style: ButtonStyle(
-                  foregroundColor: WidgetStateProperty.all(textBright),
-                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -237,18 +246,12 @@ class _ConnectViewState extends State<ConnectView> {
           padding: const EdgeInsets.all(16),
           children: [
             _sectionHeader('Type'),
-            SegmentedButton<ConnectionType>(
-              segments: const [
-                ButtonSegment(
-                    value: ConnectionType.direct, label: Text('Direct SSH')),
-                ButtonSegment(
-                    value: ConnectionType.relay, label: Text('Unix Shells')),
+            Row(
+              children: [
+                _typeBox('Direct SSH', ConnectionType.direct),
+                const SizedBox(width: 8),
+                _typeBox('latch', ConnectionType.relay),
               ],
-              selected: {_type},
-              onSelectionChanged: (v) => setState(() => _type = v.first),
-              style: ButtonStyle(
-                foregroundColor: WidgetStateProperty.all(textBright),
-              ),
             ),
             const SizedBox(height: 16),
 
@@ -263,7 +266,7 @@ class _ConnectViewState extends State<ConnectView> {
             ],
 
             if (_type == ConnectionType.relay) ...[
-              _field(_relayUsernameCtrl, 'Unix Shells Username', 'rasengan',
+              _field(_relayUsernameCtrl, 'latch username', 'rasengan',
                   validator: _required),
               _field(_relayDeviceCtrl, 'Device', 'macbook',
                   validator: _required),
@@ -275,22 +278,19 @@ class _ConnectViewState extends State<ConnectView> {
 
             const SizedBox(height: 16),
             _sectionHeader('Authentication'),
-            SegmentedButton<AuthMethod>(
-              segments: const [
-                ButtonSegment(value: AuthMethod.key, label: Text('Key')),
-                ButtonSegment(
-                    value: AuthMethod.password, label: Text('Password')),
-              ],
-              selected: {_authMethod},
-              onSelectionChanged: (v) =>
-                  setState(() => _authMethod = v.first),
-              style: ButtonStyle(
-                foregroundColor: WidgetStateProperty.all(textBright),
+            // latch connections are always key-based
+            if (_type == ConnectionType.direct) ...[
+              Row(
+                children: [
+                  _authBox('Key', AuthMethod.key),
+                  const SizedBox(width: 8),
+                  _authBox('Password', AuthMethod.password),
+                ],
               ),
-            ),
+            ],
             const SizedBox(height: 12),
 
-            if (_authMethod == AuthMethod.key) ...[
+            if (_authMethod == AuthMethod.key || _type == ConnectionType.relay) ...[
               DropdownButtonFormField<String>(
                 initialValue: _selectedKeyId,
                 hint: const Text('Select SSH key',
@@ -331,14 +331,16 @@ class _ConnectViewState extends State<ConnectView> {
               value: _useMosh,
               onChanged: (v) => setState(() => _useMosh = v),
             ),
-            const SizedBox(height: 8),
-            _field(_sessionNameCtrl, 'Latch Session', 'default'),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Text(
-                  'Leave blank for "default". Selects which latch session to attach to.',
-                  style: TextStyle(color: textMuted, fontSize: 12)),
-            ),
+            if (_type == ConnectionType.relay) ...[
+              const SizedBox(height: 8),
+              _field(_sessionNameCtrl, 'latch session', 'default'),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: Text(
+                    'Leave blank for "default". Selects which latch session to attach to.',
+                    style: TextStyle(color: textMuted, fontSize: 12)),
+              ),
+            ],
 
             // Forwarding section.
             const SizedBox(height: 16),
@@ -395,6 +397,53 @@ class _ConnectViewState extends State<ConnectView> {
               );
             }),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _typeBox(String label, ConnectionType value) {
+    final selected = _type == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() {
+          _type = value;
+          if (value == ConnectionType.relay) _authMethod = AuthMethod.key;
+        }),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? accent.withValues(alpha: 0.12) : bgCard,
+            border: Border.all(color: selected ? accent : borderColor),
+          ),
+          child: Center(
+            child: Text(label, style: TextStyle(
+              color: selected ? accent : textDim,
+              fontSize: 13, fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            )),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _authBox(String label, AuthMethod value) {
+    final selected = _authMethod == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _authMethod = value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? accent.withValues(alpha: 0.12) : bgCard,
+            border: Border.all(color: selected ? accent : borderColor),
+          ),
+          child: Center(
+            child: Text(label, style: TextStyle(
+              color: selected ? accent : textDim,
+              fontSize: 13, fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            )),
+          ),
         ),
       ),
     );

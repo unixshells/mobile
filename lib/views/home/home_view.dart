@@ -12,8 +12,15 @@ import '../../util/constants.dart';
 import '../connect/connect_view.dart';
 import '../keys/key_list_view.dart';
 import '../settings/settings_view.dart';
+import '../account/account_view.dart';
 import '../terminal/terminal_view.dart';
-import 'connection_tile.dart';
+
+class _Tab {
+  final String label;
+  final IconData icon;
+  final Widget body;
+  const _Tab(this.label, this.icon, this.body);
+}
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -22,50 +29,60 @@ class HomeView extends StatefulWidget {
   State<HomeView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends State<HomeView>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _HomeViewState extends State<HomeView> {
+  int _currentTab = 0;
   List<Connection> _connections = [];
-  bool _loading = true;
-  String _searchQuery = '';
-  bool _searching = false;
+  bool _signedIn = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
     _loadConnections();
+    _checkSignedIn();
+  }
+
+  Future<void> _checkSignedIn() async {
+    final storage = context.read<StorageService>();
+    final account = await storage.getAccount();
+    if (mounted) setState(() => _signedIn = account != null);
   }
 
   Future<void> _loadConnections() async {
     final storage = context.read<StorageService>();
     final conns = await storage.listConnections();
-    setState(() {
-      _connections = conns;
-      _loading = false;
-    });
-  }
-
-  List<Connection> get _relayConnections =>
-      _connections.where((c) => c.type == ConnectionType.relay).toList();
-
-  List<Connection> _filter(List<Connection> conns) {
-    if (_searchQuery.isEmpty) return conns;
-    final q = _searchQuery.toLowerCase();
-    return conns
-        .where((c) =>
-            c.label.toLowerCase().contains(q) ||
-            c.destination.toLowerCase().contains(q) ||
-            c.username.toLowerCase().contains(q))
-        .toList();
+    if (mounted) setState(() => _connections = conns);
   }
 
   void _connect(Connection conn) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => TerminalPage(pendingConnection: conn),
-      ),
+      MaterialPageRoute(builder: (_) => TerminalPage(pendingConnection: conn)),
     );
+  }
+
+  void _connectToRelaySession(Device device, String sessionName) async {
+    final storage = context.read<StorageService>();
+    final account = await storage.getAccount();
+    if (account == null) return;
+    final host = await storage.getSetting('relay_host');
+    final relayHost = (host != null && host.isNotEmpty) ? host : 'unixshells.com';
+
+    final prefs = await storage.getDevicePrefs(account.username, '${device.name}:$sessionName');
+    final useMosh = prefs['useMosh'] == true;
+
+    final conn = Connection(
+      id: 'relay-${device.name}-$sessionName',
+      label: '${device.name}/$sessionName',
+      host: '${device.name}.${account.username}.$relayHost',
+      port: defaultSSHPort,
+      username: account.username,
+      authMethod: AuthMethod.key,
+      type: ConnectionType.relay,
+      relayUsername: account.username,
+      relayDevice: device.name,
+      sessionName: sessionName,
+      useMosh: useMosh,
+    );
+    _connect(conn);
   }
 
   void _returnToTerminals([int? sessionIndex]) {
@@ -83,781 +100,347 @@ class _HomeViewState extends State<HomeView>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: bgCard,
-        title: const Text('Delete Connection',
-            style: TextStyle(color: textBright)),
-        content: Text('Delete "${conn.label}"?',
-            style: const TextStyle(color: textDim)),
+        title: const Text('Delete connection'),
+        content: Text('Delete "${conn.label}"?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child:
-                const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
         ],
       ),
     );
     if (confirmed != true) return;
-    if (conn.passwordId != null) {
-      await storage.deletePassword(conn.passwordId!);
-    }
+    if (conn.passwordId != null) await storage.deletePassword(conn.passwordId!);
     await storage.deleteConnection(conn.id);
-    await _loadConnections();
+    _loadConnections();
   }
 
-  Future<void> _resetHostKeyForConnection(Connection conn) async {
-    final storage = context.read<StorageService>();
-    final messenger = ScaffoldMessenger.of(context);
-    if (conn.type == ConnectionType.relay) {
-      final host = await storage.getSetting('relay_host');
-      final relayHost = (host != null && host.isNotEmpty) ? host : 'unixshells.com';
-      final dest = '${conn.relayDevice}.${conn.relayUsername}.$relayHost';
-      await storage.deleteHostKey(dest, defaultSSHPort);
-    } else {
-      await storage.deleteHostKey(conn.host, conn.port);
+  List<_Tab> get _tabs {
+    final base = [
+      _Tab('terminal', Icons.terminal, _buildTerminalBody()),
+    ];
+    if (_signedIn) {
+      base.add(_Tab('shells', Icons.dns_outlined, const ShellsTab()));
     }
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Host key cleared')),
-    );
-  }
-
-  Future<void> _resetHostKeyForSession(Device device, String sessionName) async {
-    final storage = context.read<StorageService>();
-    final account = await storage.getAccount();
-    final messenger = ScaffoldMessenger.of(context);
-    if (account == null) return;
-    final host = await storage.getSetting('relay_host');
-    final relayHost = (host != null && host.isNotEmpty) ? host : 'unixshells.com';
-    final dest = '${device.name}.${account.username}.$relayHost';
-    await storage.deleteHostKey(dest, defaultSSHPort);
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Host key cleared')),
-    );
-  }
-
-  Future<void> _onReorder(List<Connection> conns, int oldIndex, int newIndex) async {
-    if (newIndex > oldIndex) newIndex--;
-    final item = conns.removeAt(oldIndex);
-    conns.insert(newIndex, item);
-    for (var i = 0; i < conns.length; i++) {
-      conns[i].sortOrder = i;
-    }
-    final storage = context.read<StorageService>();
-    await storage.reorderConnections(conns);
-    await _loadConnections();
+    base.add(_Tab('account', Icons.person_outline, const AccountView()));
+    base.add(_Tab('settings', Icons.settings_outlined, const SettingsView()));
+    return base;
   }
 
   @override
   Widget build(BuildContext context) {
+    final tabs = _tabs;
+    // Clamp tab index if tabs changed (e.g. signed out)
+    if (_currentTab >= tabs.length) _currentTab = 0;
+
     return Scaffold(
       backgroundColor: bgDark,
+      drawer: _buildDrawer(),
       appBar: AppBar(
-        title: _searching
-            ? TextField(
-                autofocus: true,
-                style: const TextStyle(color: textBright),
-                decoration: const InputDecoration(
-                  hintText: 'Search connections...',
-                  hintStyle: TextStyle(color: textMuted),
-                  border: InputBorder.none,
-                ),
-                onChanged: (v) => setState(() => _searchQuery = v),
-              )
-            : const Text('Unix Shells'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            const Tab(text: 'All'),
-            const Tab(text: 'Relay'),
-            const Tab(text: 'Shells'),
-            Consumer<SessionManager>(
-              builder: (context, manager, _) {
-                final count = manager.sessions.length;
-                return Tab(
-                  text: count > 0 ? 'Sessions ($count)' : 'Sessions',
-                );
-              },
+        backgroundColor: bgSidebar,
+        title: Text(tabs[_currentTab].label),
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu, color: textDim),
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
+      ),
+      body: IndexedStack(
+        index: _currentTab,
+        children: tabs.map((t) => t.body).toList(),
+      ),
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  // ── Bottom navigation ──
+
+  Widget _buildBottomNav() {
+    final tabs = _tabs;
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: borderColor, width: 1)),
+        color: bgSidebar,
+      ),
+      child: SafeArea(
+        child: SizedBox(
+          height: 56,
+          child: Row(
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                _navItem(i, tabs[i].icon, tabs[i].label),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _navItem(int index, IconData icon, String label) {
+    final selected = _currentTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() => _currentTab = index);
+          _checkSignedIn(); // refresh tabs after switching (catches sign in/out)
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20, color: selected ? accent : textMuted),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(fontSize: 10, color: selected ? accent : textMuted)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Left drawer (devices) ──
+
+  Widget _buildDrawer() {
+    return Drawer(
+      backgroundColor: bgSidebar,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text('devices', style: TextStyle(color: textDim, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1)),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ConnectView()),
+                      ).then((_) => _loadConnections());
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(Icons.add, color: accent, size: 16),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: borderColor),
+
+            // Online relay devices
+            Expanded(
+              child: Consumer<DiscoveryService>(
+                builder: (context, discovery, _) {
+                  final online = discovery.onlineDevices;
+                  return ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: [
+                      // Online relay devices
+                      if (online.isNotEmpty) ...[
+                        _drawerSection('online'),
+                        ...online.expand((device) {
+                          final alive = device.sessions.where((s) => s.status == 'alive').toList();
+                          return [
+                            _drawerMachine(device.name, alive.length, true),
+                            ...alive.map((s) => _drawerSession(device, s)),
+                          ];
+                        }),
+                      ],
+
+                      // Saved connections
+                      if (_connections.isNotEmpty) ...[
+                        _drawerSection('saved'),
+                        ..._connections.map((c) => _drawerSavedConnection(c)),
+                      ],
+
+                      // Active sessions
+                      Consumer<SessionManager>(
+                        builder: (context, manager, _) {
+                          if (manager.sessions.isEmpty) return const SizedBox.shrink();
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _drawerSection('active sessions'),
+                              ...manager.sessions.asMap().entries.map((e) {
+                                final i = e.key;
+                                final session = e.value;
+                                return _drawerSessionItem(session.label, i);
+                              }),
+                            ],
+                          );
+                        },
+                      ),
+
+                      // Empty state
+                      if (online.isEmpty && _connections.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(
+                            child: Text('No devices.\nSign in and start latch.', textAlign: TextAlign.center, style: TextStyle(color: textMuted, fontSize: 12)),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(_searching ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() {
-                _searching = !_searching;
-                if (!_searching) _searchQuery = '';
-              });
-            },
+      ),
+    );
+  }
+
+  Widget _drawerSection(String label) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+      child: Text(label, style: const TextStyle(color: textMuted, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.8)),
+    );
+  }
+
+  Widget _drawerMachine(String deviceName, int sessionCount, bool online) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 2),
+      child: Row(
+        children: [
+          Container(
+            width: 7, height: 7,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: online ? accent : textMuted),
           ),
-          IconButton(
-            icon: const Icon(Icons.vpn_key_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const KeyListView()),
-            ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(deviceName, style: const TextStyle(color: textBright, fontSize: 13, fontWeight: FontWeight.w500)),
           ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsView()),
-            ),
-          ),
+          if (sessionCount > 0)
+            Text('$sessionCount', style: const TextStyle(color: textMuted, fontSize: 11)),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildConnectionList(_filter(_connections)),
-                _buildUnixShellsTab(),
-                _buildShellsTab(),
-                _buildSessionList(),
-              ],
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddMenu(context),
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
-  Future<Connection> _buildDeviceConnection(Device device) async {
-    final storage = context.read<StorageService>();
-    final keyService = context.read<KeyService>();
-    final account = await storage.getAccount();
-    if (account == null) throw Exception('not signed in');
-    final keys = await keyService.list();
-    final prefs = await storage.getDevicePrefs(account.username, device.name);
-    return Connection(
-      id: 'discovered_${device.name}',
-      label: device.name,
-      type: ConnectionType.relay,
-      host: '',
-      username: account.username,
-      authMethod: AuthMethod.key,
-      keyId: prefs['keyId'] as String? ?? (keys.isNotEmpty ? keys.first.id : null),
-      relayUsername: account.username,
-      relayDevice: device.name,
-      useMosh: prefs['useMosh'] as bool? ?? false,
-      sessionName: prefs['sessionName'] as String?,
-    );
-  }
-
-  Future<void> _connectToDevice(Device device) async {
-    final conn = await _buildDeviceConnection(device);
-    if (!mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => TerminalPage(pendingConnection: conn),
-      ),
-    );
-  }
-
-  Future<void> _connectToDeviceSession(Device device, String sessionName) async {
-    final storage = context.read<StorageService>();
-    final account = await storage.getAccount();
-    final conn = await _buildDeviceConnection(device);
-    // Check per-session prefs (mosh, key) — fall back to device prefs,
-    // then to first available key.
-    if (account != null) {
-      final sessionPrefs = await storage.getDevicePrefs(
-          account.username, '${device.name}:$sessionName');
-      final useMosh = sessionPrefs['useMosh'] as bool? ?? conn.useMosh;
-      var keyId = sessionPrefs['keyId'] as String? ?? conn.keyId;
-      // Verify the key still exists, fall back to first available.
-      if (keyId != null) {
-        final keyService = context.read<KeyService>();
-        final identities = await keyService.loadIdentity(keyId);
-        if (identities.isEmpty) {
-          final keys = await keyService.list();
-          keyId = keys.isNotEmpty ? keys.first.id : null;
-        }
-      }
-      final withSession = conn.copyWith(
-          sessionName: sessionName, useMosh: useMosh, keyId: keyId);
-      if (!mounted) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => TerminalPage(pendingConnection: withSession),
-        ),
-      );
-      return;
-    }
-    final withSession = conn.copyWith(sessionName: sessionName);
-    if (!mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => TerminalPage(pendingConnection: withSession),
-      ),
-    );
-  }
-
-  Future<void> _editSessionPrefs(Device device, String sessionName) async {
-    final storage = context.read<StorageService>();
-    final keyService = context.read<KeyService>();
-    final account = await storage.getAccount();
-    if (account == null) return;
-    final keys = await keyService.list();
-    final prefs = await storage.getDevicePrefs(account.username, '${device.name}:$sessionName');
-
-    var useMosh = prefs['useMosh'] as bool? ?? false;
-    var keyId = prefs['keyId'] as String? ?? (keys.isNotEmpty ? keys.first.id : null);
-
-    if (!mounted) return;
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: bgCard,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.only(
-            left: 24, right: 24, top: 24,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('${device.name} / $sessionName',
-                  style: const TextStyle(
-                      color: textBright,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Use Mosh',
-                    style: TextStyle(color: textBright)),
-                value: useMosh,
-                onChanged: (v) => setSheetState(() => useMosh = v),
-              ),
-              if (keys.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: keyId,
-                  dropdownColor: bgCard,
-                  style: const TextStyle(color: textBright),
-                  items: keys.map((k) => DropdownMenuItem(
-                        value: k.id,
-                        child: Text(k.label,
-                            style: const TextStyle(color: textBright)),
-                      )).toList(),
-                  onChanged: (v) => setSheetState(() => keyId = v),
-                  decoration: InputDecoration(
-                    labelText: 'SSH Key',
-                    labelStyle: const TextStyle(color: textDim),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: borderColor),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: accent),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
-                    fillColor: bgDark,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: accent),
-                  onPressed: () async {
-                    final newPrefs = <String, dynamic>{
-                      'useMosh': useMosh,
-                      if (keyId != null) 'keyId': keyId,
-                    };
-                    await storage.saveDevicePrefs(
-                        account.username, '${device.name}:$sessionName', newPrefs);
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  },
-                  child: const Text('Save',
-                      style: TextStyle(color: textBright)),
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () async {
-                    await _resetHostKeyForSession(device, sessionName);
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  },
-                  child: const Text('Reset Host Key',
-                      style: TextStyle(color: textMuted, fontSize: 13)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _editDevicePrefs(Device device) async {
-    final storage = context.read<StorageService>();
-    final keyService = context.read<KeyService>();
-    final account = await storage.getAccount();
-    if (account == null) return;
-    final keys = await keyService.list();
-    final prefs = await storage.getDevicePrefs(account.username, device.name);
-
-    var useMosh = prefs['useMosh'] as bool? ?? false;
-    var sessionName = prefs['sessionName'] as String? ?? '';
-    var keyId = prefs['keyId'] as String? ?? (keys.isNotEmpty ? keys.first.id : null);
-    final sessionCtrl = TextEditingController(text: sessionName);
-
-    if (!mounted) return;
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: bgCard,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.only(
-            left: 24, right: 24, top: 24,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(device.name,
-                  style: const TextStyle(
-                      color: textBright,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Use Mosh',
-                    style: TextStyle(color: textBright)),
-                value: useMosh,
-                onChanged: (v) => setSheetState(() => useMosh = v),
-              ),
-              TextField(
-                controller: sessionCtrl,
-                style: const TextStyle(color: textBright),
-                decoration: InputDecoration(
-                  labelText: 'Session Name',
-                  labelStyle: const TextStyle(color: textDim),
-                  hintText: 'default',
-                  hintStyle: const TextStyle(color: borderColor),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: borderColor),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: accent),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  filled: true,
-                  fillColor: bgDark,
-                ),
-              ),
-              if (keys.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: keyId,
-                  dropdownColor: bgCard,
-                  style: const TextStyle(color: textBright),
-                  items: keys.map((k) => DropdownMenuItem(
-                        value: k.id,
-                        child: Text(k.label,
-                            style: const TextStyle(color: textBright)),
-                      )).toList(),
-                  onChanged: (v) => setSheetState(() => keyId = v),
-                  decoration: InputDecoration(
-                    labelText: 'SSH Key',
-                    labelStyle: const TextStyle(color: textDim),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: borderColor),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: accent),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
-                    fillColor: bgDark,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: accent),
-                  onPressed: () async {
-                    final newPrefs = <String, dynamic>{
-                      'useMosh': useMosh,
-                      'sessionName': sessionCtrl.text.trim(),
-                      if (keyId != null) 'keyId': keyId,
-                    };
-                    await storage.saveDevicePrefs(
-                        account.username, device.name, newPrefs);
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  },
-                  child: const Text('Save',
-                      style: TextStyle(color: textBright)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUnixShellsTab() {
-    return Consumer<DiscoveryService>(
-      builder: (context, discovery, _) {
-        final online = discovery.onlineDevices;
-        final saved = _filter(_relayConnections);
-        // Filter out saved connections that match an online device.
-        final savedDeviceNames = <String>{};
-        for (final c in saved) {
-          if (c.relayDevice != null) savedDeviceNames.add(c.relayDevice!);
-        }
-        final onlineOnly = online
-            .where((d) => !savedDeviceNames.contains(d.name))
-            .toList();
-
-        if (online.isEmpty && saved.isEmpty) {
-          return RefreshIndicator(
-            onRefresh: () async {
-              await discovery.refresh();
-              await _loadConnections();
-            },
-            child: ListView(
-              children: const [
-                SizedBox(height: 120),
-                Center(
-                  child: Column(
-                    children: [
-                      Icon(Icons.cloud_outlined, size: 64, color: borderColor),
-                      SizedBox(height: 16),
-                      Text('No devices online',
-                          style: TextStyle(color: textMuted, fontSize: 16)),
-                      SizedBox(height: 8),
-                      Text('Sign in and start latch on a machine',
-                          style: TextStyle(color: borderColor, fontSize: 14)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: () async {
-            await discovery.refresh();
-            await _loadConnections();
-          },
-          child: ListView(
-            children: [
-              if (onlineOnly.isNotEmpty) ...[
-                _tabSectionHeader('Online'),
-                ...onlineOnly.expand((device) {
-                  final alive = device.sessions
-                      .where((s) => s.status == 'alive')
-                      .toList();
-                  return [
-                    ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: accent.withValues(alpha: 0.2),
-                        child: const Icon(Icons.computer, color: accent, size: 18),
-                      ),
-                      title: Text(device.name,
-                          style: const TextStyle(color: textBright, fontSize: 15)),
-                      subtitle: Text(
-                          alive.isEmpty
-                              ? 'no sessions'
-                              : '${alive.length} session${alive.length == 1 ? '' : 's'}',
-                          style: const TextStyle(color: textMuted, fontSize: 13)),
-                    ),
-                    ...alive.map((session) => ListTile(
-                          contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                          leading: const Icon(Icons.terminal, color: textMuted, size: 20),
-                          title: Text(session.name,
-                              style: const TextStyle(color: textDim, fontSize: 14)),
-                          subtitle: session.title.isNotEmpty
-                              ? Text(session.title,
-                                  style: const TextStyle(color: textMuted, fontSize: 12),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis)
-                              : null,
-                          trailing: PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert, color: textMuted),
-                            color: bgCard,
-                            onSelected: (value) {
-                              if (value == 'edit') _editSessionPrefs(device, session.name);
-                            },
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(
-                                value: 'edit',
-                                child: Text('Edit', style: TextStyle(color: textBright)),
-                              ),
-                            ],
-                          ),
-                          onTap: () => _connectToDeviceSession(device, session.name),
-                        )),
-                  ];
-                }),
-              ],
-              if (saved.isNotEmpty) ...[
-                if (onlineOnly.isNotEmpty) _tabSectionHeader('Saved'),
-                ...saved.map((conn) {
-                  // Mark saved connections that are online.
-                  final isOnline = online.any((d) => d.name == conn.relayDevice);
-                  return ConnectionTile(
-                    key: ValueKey(conn.id),
-                    connection: conn,
-                    onTap: () => _connect(conn),
-                    onDelete: () => _deleteConnection(conn),
-                    onEdit: () async {
-                      await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ConnectView(existing: conn),
-                        ),
-                      );
-                      _loadConnections();
-                    },
-                    onResetHostKey: () => _resetHostKeyForConnection(conn),
-                    trailing: isOnline
-                        ? const Icon(Icons.circle, color: accent, size: 8)
-                        : null,
-                  );
-                }),
-              ],
-            ],
-          ),
-        );
+  Widget _drawerSession(Device device, DeviceSession session) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        _connectToRelaySession(device, session.name);
       },
-    );
-  }
-
-  Widget _tabSectionHeader(String text) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Text(text,
-          style: const TextStyle(
-              color: textDim, fontSize: 12, fontWeight: FontWeight.w600)),
-    );
-  }
-
-  void _showAddMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: bgCard,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 32, height: 4, margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(color: textMuted, borderRadius: BorderRadius.circular(2)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(37, 4, 20, 4),
+        child: Row(
+          children: [
+            const Icon(Icons.terminal, color: textMuted, size: 13),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(session.name, style: const TextStyle(color: textDim, fontSize: 12)),
+            ),
+            if (session.title.isNotEmpty)
+              Flexible(
+                child: Text(session.title, style: const TextStyle(color: textMuted, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
-              _addMenuItem(ctx, Icons.terminal, 'SSH connection', 'Connect to a host via SSH', () {
-                Navigator.pop(ctx);
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ConnectView()),
-                ).then((_) => _loadConnections());
-              }),
-              _addMenuItem(ctx, Icons.cloud_outlined, 'Relay device', 'Add a device via latch relay', () {
-                Navigator.pop(ctx);
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ConnectView()),
-                ).then((_) => _loadConnections());
-              }),
-              _addMenuItem(ctx, Icons.dns_outlined, 'New shell', 'Provision a managed Linux VM', () {
-                Navigator.pop(ctx);
-                _tabController.animateTo(2); // Switch to Shells tab
-              }),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _addMenuItem(BuildContext ctx, IconData icon, String title, String subtitle, VoidCallback onTap) {
-    return ListTile(
-      leading: Container(
-        width: 40, height: 40,
-        decoration: BoxDecoration(
-          color: accent.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
+  Widget _drawerSavedConnection(Connection conn) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        _connect(conn);
+      },
+      onLongPress: () => _deleteConnection(conn),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 7, height: 7,
+              decoration: const BoxDecoration(shape: BoxShape.circle, color: textMuted),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(conn.label, style: const TextStyle(color: textBright, fontSize: 13)),
+                  Text(conn.destination, style: const TextStyle(color: textMuted, fontSize: 11)),
+                ],
+              ),
+            ),
+          ],
         ),
-        child: Icon(icon, color: accent, size: 20),
       ),
-      title: Text(title, style: const TextStyle(color: textBright, fontSize: 14, fontWeight: FontWeight.w500)),
-      subtitle: Text(subtitle, style: const TextStyle(color: textMuted, fontSize: 12)),
-      onTap: onTap,
     );
   }
 
-  Widget _buildShellsTab() {
-    return const ShellsTab();
+  Widget _drawerSessionItem(String label, int index) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        _returnToTerminals(index);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: Row(
+          children: [
+            const Icon(Icons.terminal, color: accent, size: 14),
+            const SizedBox(width: 10),
+            Text(label, style: const TextStyle(color: textBright, fontSize: 13)),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _buildSessionList() {
+  // ── Terminal tab body ──
+
+  Widget _buildTerminalBody() {
     return Consumer<SessionManager>(
       builder: (context, manager, _) {
         if (manager.sessions.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.terminal, size: 64, color: borderColor),
-                SizedBox(height: 16),
-                Text(
-                  'No active sessions',
-                  style: TextStyle(color: textMuted, fontSize: 16),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Connect to a server to start one',
-                  style: TextStyle(color: borderColor, fontSize: 14),
-                ),
+                const Icon(Icons.terminal, size: 48, color: textMuted),
+                const SizedBox(height: 16),
+                const Text('no active sessions', style: TextStyle(color: textMuted, fontSize: 14)),
+                const SizedBox(height: 8),
+                const Text('swipe right to see devices', style: TextStyle(color: textMuted, fontSize: 12)),
               ],
             ),
           );
         }
         return ListView.builder(
+          padding: const EdgeInsets.all(12),
           itemCount: manager.sessions.length,
           itemBuilder: (context, i) {
             final session = manager.sessions[i];
-            final isRelay = session.connection.type == ConnectionType.relay;
-            final duration = DateTime.now().difference(session.createdAt);
-            String elapsed;
-            if (duration.inHours > 0) {
-              elapsed = '${duration.inHours}h ${duration.inMinutes % 60}m';
-            } else if (duration.inMinutes > 0) {
-              elapsed = '${duration.inMinutes}m';
-            } else {
-              elapsed = 'just now';
-            }
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundColor:
-                    isRelay ? accent.withValues(alpha: 0.2) : bgButton,
-                child: Icon(
-                  isRelay ? Icons.cloud : Icons.computer,
-                  color: isRelay ? accent : textDim,
-                  size: 20,
-                ),
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: bgCard,
+                borderRadius: BorderRadius.circular(6),
               ),
-              title: Text(
-                session.label,
-                style: const TextStyle(color: textBright, fontSize: 15),
+              child: ListTile(
+                leading: const Icon(Icons.terminal, color: accent, size: 20),
+                title: Text(session.label, style: const TextStyle(color: textBright, fontSize: 13)),
+                subtitle: Text(session.connection.destination, style: const TextStyle(color: textMuted, fontSize: 11)),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 12, color: textMuted),
+                onTap: () => _returnToTerminals(i),
               ),
-              subtitle: Text(
-                '${session.connection.destination} · $elapsed',
-                style: const TextStyle(color: textMuted, fontSize: 13),
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios,
-                  size: 14, color: borderColor),
-              onTap: () => _returnToTerminals(i),
             );
           },
         );
       },
     );
-  }
-
-  Widget _buildConnectionList(List<Connection> connections) {
-    if (connections.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.terminal, size: 64, color: borderColor),
-            const SizedBox(height: 16),
-            Text(
-              _searchQuery.isEmpty
-                  ? 'No connections yet'
-                  : 'No matches',
-              style: const TextStyle(color: textMuted, fontSize: 16),
-            ),
-            if (_searchQuery.isEmpty) ...[
-              const SizedBox(height: 8),
-              const Text(
-                'Tap + to add one',
-                style: TextStyle(color: borderColor, fontSize: 14),
-              ),
-            ],
-          ],
-        ),
-      );
-    }
-
-    if (_searchQuery.isNotEmpty) {
-      return RefreshIndicator(
-        onRefresh: _loadConnections,
-        child: ListView.builder(
-          itemCount: connections.length,
-          itemBuilder: (context, i) => ConnectionTile(
-            key: ValueKey(connections[i].id),
-            connection: connections[i],
-            onTap: () => _connect(connections[i]),
-            onDelete: () => _deleteConnection(connections[i]),
-            onEdit: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ConnectView(existing: connections[i]),
-                ),
-              );
-              _loadConnections();
-            },
-            onResetHostKey: () => _resetHostKeyForConnection(connections[i]),
-          ),
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadConnections,
-      child: ReorderableListView.builder(
-        itemCount: connections.length,
-        onReorder: (oldIndex, newIndex) =>
-            _onReorder(connections, oldIndex, newIndex),
-        itemBuilder: (context, i) => ConnectionTile(
-          key: ValueKey(connections[i].id),
-          connection: connections[i],
-          onTap: () => _connect(connections[i]),
-          onDelete: () => _deleteConnection(connections[i]),
-          onEdit: () async {
-            await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    ConnectView(existing: connections[i]),
-              ),
-            );
-            _loadConnections();
-          },
-          onResetHostKey: () => _resetHostKeyForConnection(connections[i]),
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 }
