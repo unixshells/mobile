@@ -25,54 +25,54 @@ class ConnectionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isRelay = connection.type == ConnectionType.relay;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 1),
-      color: bgCard,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            color: isRelay ? accent.withValues(alpha: 0.12) : bgSurface,
-          ),
-          child: Icon(
-            isRelay ? Icons.cloud_outlined : Icons.terminal,
-            color: isRelay ? accent : textDim,
-            size: 18,
-          ),
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: borderColor, width: 1)),
         ),
-        title: Text(
-          connection.label,
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            color: textBright,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        subtitle: Text(
-          connection.sessionName != null && connection.sessionName!.isNotEmpty
-              ? '${connection.destination} · ${connection.sessionName}'
-              : connection.destination,
-          style: const TextStyle(fontFamily: 'monospace', color: textMuted, fontSize: 11),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
+            // Online dot
+            Container(
+              width: 8, height: 8,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isRelay ? accent : textMuted,
+              ),
+            ),
+            // Name + destination
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    connection.label,
+                    style: const TextStyle(color: textBright, fontSize: 13, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    connection.sessionName != null && connection.sessionName!.isNotEmpty
+                        ? '${connection.destination} · ${connection.sessionName}'
+                        : connection.destination,
+                    style: const TextStyle(color: textMuted, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
             if (trailing != null) ...[
               trailing!,
               const SizedBox(width: 4),
             ],
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: textMuted, size: 18),
+              icon: const Icon(Icons.more_horiz, color: textMuted, size: 16),
               onSelected: (value) {
                 switch (value) {
-                  case 'edit':
-                    onEdit();
-                  case 'delete':
-                    onDelete();
-                  case 'reset_host_key':
-                    onResetHostKey?.call();
+                  case 'edit': onEdit();
+                  case 'delete': onDelete();
+                  case 'reset_host_key': onResetHostKey?.call();
                 }
               },
               itemBuilder: (context) => [
@@ -87,7 +87,6 @@ class ConnectionTile extends StatelessWidget {
             ),
           ],
         ),
-        onTap: onTap,
       ),
     );
   }

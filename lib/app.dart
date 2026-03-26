@@ -69,42 +69,46 @@ class _UnixShellsAppState extends State<UnixShellsApp> {
           colorScheme: const ColorScheme.dark(
             primary: accent,
             surface: bgCard,
-            onPrimary: Color(0xFF0a0e14),
+            onPrimary: Color(0xFF0b0c10),
           ),
           appBarTheme: const AppBarTheme(
-            backgroundColor: bgCard,
+            backgroundColor: bgSidebar,
             foregroundColor: textBright,
             elevation: 0,
-            titleTextStyle: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: textBright,
-            ),
+            titleTextStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: textBright),
           ),
           tabBarTheme: const TabBarThemeData(
             indicatorColor: accent,
             labelColor: textBright,
             unselectedLabelColor: textMuted,
-            labelStyle: TextStyle(fontFamily: 'monospace', fontSize: 12, fontWeight: FontWeight.w600),
-            unselectedLabelStyle: TextStyle(fontFamily: 'monospace', fontSize: 12),
+            labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            unselectedLabelStyle: TextStyle(fontSize: 12),
           ),
           floatingActionButtonTheme: const FloatingActionButtonThemeData(
             backgroundColor: accent,
-            foregroundColor: Color(0xFF0a0e14),
+            foregroundColor: Color(0xFF0b0c10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
           ),
-          dialogTheme: const DialogThemeData(
+          dialogTheme: DialogThemeData(
             backgroundColor: bgCard,
-            titleTextStyle: TextStyle(fontFamily: 'monospace', fontSize: 15, fontWeight: FontWeight.w600, color: textBright),
-            contentTextStyle: TextStyle(fontSize: 13, color: textDim, height: 1.6),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: textBright),
+            contentTextStyle: const TextStyle(fontSize: 13, color: textDim, height: 1.6),
           ),
-          popupMenuTheme: const PopupMenuThemeData(
+          popupMenuTheme: PopupMenuThemeData(
             color: bgSurface,
-            textStyle: TextStyle(fontFamily: 'monospace', fontSize: 13, color: textDim),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(fontSize: 13, color: textDim),
           ),
-          snackBarTheme: const SnackBarThemeData(
+          snackBarTheme: SnackBarThemeData(
             backgroundColor: bgSurface,
-            contentTextStyle: TextStyle(fontFamily: 'monospace', fontSize: 12, color: textBright),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            contentTextStyle: const TextStyle(fontSize: 12, color: textBright),
+          ),
+          cardTheme: CardThemeData(
+            color: bgCard,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           ),
           dividerColor: borderColor,
           useMaterial3: true,
