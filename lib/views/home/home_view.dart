@@ -68,6 +68,7 @@ class _HomeViewState extends State<HomeView> {
 
     final prefs = await storage.getDevicePrefs(account.username, '${device.name}:$sessionName');
     final useMosh = prefs['useMosh'] == true;
+    final keyId = prefs['keyId'] as String?;
 
     final conn = Connection(
       id: 'relay-${device.name}-$sessionName',
@@ -76,6 +77,7 @@ class _HomeViewState extends State<HomeView> {
       port: defaultSSHPort,
       username: account.username,
       authMethod: AuthMethod.key,
+      keyId: keyId,
       type: ConnectionType.relay,
       relayUsername: account.username,
       relayDevice: device.name,
@@ -83,6 +85,92 @@ class _HomeViewState extends State<HomeView> {
       useMosh: useMosh,
     );
     _connect(conn);
+  }
+
+  void _editRelaySession(Device device, String sessionName) async {
+    final storage = context.read<StorageService>();
+    final keyService = context.read<KeyService>();
+    final account = await storage.getAccount();
+    if (account == null) return;
+
+    final prefsKey = '${device.name}:$sessionName';
+    final prefs = await storage.getDevicePrefs(account.username, prefsKey);
+    var useMosh = prefs['useMosh'] == true;
+    var keyId = prefs['keyId'] as String?;
+    final keys = await keyService.list();
+
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: bgCard,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${device.name} / $sessionName',
+                  style: const TextStyle(color: textBright, fontSize: 15, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Use Mosh', style: TextStyle(color: textBright)),
+                subtitle: const Text('Mobile shell — roaming, intermittent connectivity',
+                    style: TextStyle(color: textMuted, fontSize: 12)),
+                value: useMosh,
+                onChanged: (v) => setSheetState(() => useMosh = v),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String?>(
+                value: keyId,
+                hint: const Text('Default key', style: TextStyle(color: textMuted)),
+                dropdownColor: bgCard,
+                style: const TextStyle(color: textBright),
+                items: [
+                  const DropdownMenuItem<String?>(value: null, child: Text('Default key')),
+                  ...keys.map((k) => DropdownMenuItem(value: k.id, child: Text(k.label))),
+                ],
+                onChanged: (v) => setSheetState(() => keyId = v),
+                decoration: InputDecoration(
+                  labelText: 'SSH Key',
+                  labelStyle: const TextStyle(color: textDim),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: borderColor),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: accent),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: bgCard,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () async {
+                    await storage.saveDevicePrefs(account.username, prefsKey, {
+                      'useMosh': useMosh,
+                      if (keyId != null) 'keyId': keyId,
+                    });
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  child: const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _returnToTerminals([int? sessionIndex]) {
@@ -330,6 +418,10 @@ class _HomeViewState extends State<HomeView> {
       onTap: () {
         Navigator.pop(context);
         _connectToRelaySession(device, session.name);
+      },
+      onLongPress: () {
+        Navigator.pop(context);
+        _editRelaySession(device, session.name);
       },
       child: Padding(
         padding: const EdgeInsets.fromLTRB(37, 4, 20, 4),
