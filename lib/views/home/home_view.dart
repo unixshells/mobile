@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/connection.dart';
 import '../../models/device.dart';
+import '../../models/shell.dart';
 import '../../services/demo_service.dart';
 import '../../services/discovery_service.dart';
 import '../shells/shells_view.dart';
@@ -415,7 +416,9 @@ class _HomeViewState extends State<HomeView> {
   Widget _drawerMachine(Device device, int sessionCount, bool online) {
     return InkWell(
       onTap: () {
+        debugPrint('DEMO TAP: device=${device.name} sessions=${device.sessions.length}');
         final alive = device.sessions.where((s) => s.status == 'alive').toList();
+        debugPrint('DEMO TAP: alive=${alive.length} demo=${DemoService().isActive}');
         if (alive.isNotEmpty) {
           Navigator.pop(context);
           _connectToRelaySession(device, alive.first.name);
@@ -563,6 +566,10 @@ class _HomeViewState extends State<HomeView> {
     return Consumer<SessionManager>(
       builder: (context, manager, _) {
         if (manager.sessions.isEmpty) {
+          // In demo mode, show devices and shells directly here.
+          if (DemoService().isActive) {
+            return _buildDemoDeviceList();
+          }
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -598,6 +605,108 @@ class _HomeViewState extends State<HomeView> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildDemoDeviceList() {
+    final demo = DemoService();
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Text('RELAY DEVICES', style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1)),
+        ),
+        ...demo.devices.expand((device) {
+          return device.sessions.where((s) => s.status == 'alive').map((session) {
+            return _buildDemoDeviceCard(device, session);
+          });
+        }),
+        const SizedBox(height: 24),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Text('MANAGED SHELLS', style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1)),
+        ),
+        ...demo.shells.where((s) => s.isRunning).map(_buildDemoShellCard),
+      ],
+    );
+  }
+
+  Widget _buildDemoDeviceCard(Device device, DeviceSession session) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: bgCard,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.computer, color: accent, size: 18),
+        ),
+        title: Text('${device.name} / ${session.name}', style: const TextStyle(color: textBright, fontSize: 14)),
+        subtitle: Text(session.title, style: const TextStyle(color: textMuted, fontSize: 12)),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: textMuted),
+        onTap: () {
+          final conn = Connection(
+            id: 'demo-${device.name}-${session.name}',
+            label: '${device.name}/${session.name}',
+            host: '${device.name}.iapdemo.unixshells.com',
+            port: 22,
+            username: 'iapdemo',
+            authMethod: AuthMethod.key,
+            type: ConnectionType.relay,
+            relayDevice: device.name,
+            sessionName: session.name,
+          );
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => TerminalPage(pendingConnection: conn)),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDemoShellCard(Shell shell) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: bgCard,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.dns, color: accent, size: 18),
+        ),
+        title: Text(shell.id, style: const TextStyle(color: textBright, fontSize: 14, fontFamily: 'monospace')),
+        subtitle: Text('${shell.plan} — ${shell.specs}', style: const TextStyle(color: textMuted, fontSize: 12)),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: textMuted),
+        onTap: () {
+          final conn = Connection(
+            id: 'shell-${shell.id}',
+            label: shell.id,
+            host: '${shell.id}.iapdemo.unixshells.com',
+            port: 22,
+            username: 'iapdemo',
+            authMethod: AuthMethod.key,
+            type: ConnectionType.relay,
+            relayDevice: shell.id,
+            sessionName: 'default',
+          );
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => TerminalPage(pendingConnection: conn)),
+          );
+        },
+      ),
     );
   }
 }
