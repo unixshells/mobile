@@ -32,5 +32,9 @@ Export all your connections, keys, and settings to a JSON file for safekeeping o
 Remote AI Development
 Run AI coding agents like Claude Code, Codex, and other terminal-based AI tools from your phone. Mosh keeps your session alive through network changes, so long-running AI tasks continue uninterrupted while you're on the go. Monitor progress, review output, and steer your AI assistant from anywhere.
 
+SUBSCRIPTION
+
+Unix Shells Relay requires a Shell subscription. Subscribe monthly ($3.99/month) or yearly ($32.99/year) to get access to the relay infrastructure, NAT traversal, and managed shell environments. Direct SSH and Mosh connections to your own servers are always free — no subscription required.
+
 SECURITY
 All connections are end-to-end encrypted. SSH host keys are verified on first use and cached locally. Private keys never leave your device.

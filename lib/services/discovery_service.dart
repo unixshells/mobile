@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../models/device.dart';
+import 'demo_service.dart';
 import 'key_service.dart';
 import 'relay_api_service.dart';
 import 'storage_service.dart';
@@ -48,6 +49,12 @@ class DiscoveryService extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
+    final demo = DemoService();
+    if (demo.isActive) {
+      _onlineDevices = demo.devices;
+      notifyListeners();
+      return;
+    }
     final account = await _storage.getAccount();
     if (account == null) {
       _onlineDevices = [];

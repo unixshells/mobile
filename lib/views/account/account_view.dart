@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/account.dart';
 import '../../models/device.dart';
 import '../../models/ssh_key.dart';
+import '../../services/demo_service.dart';
 import '../../services/discovery_service.dart';
 import '../../services/key_service.dart';
 import '../../services/relay_api_service.dart';
@@ -67,6 +68,16 @@ class _AccountViewState extends State<AccountView> {
 
   Future<void> _refreshStatus() async {
     if (_account == null) return;
+    final demo = DemoService();
+    if (demo.isActive) {
+      if (mounted) {
+        setState(() {
+          _account = demo.account;
+          _devices = demo.devices;
+        });
+      }
+      return;
+    }
     final api = context.read<RelayApiService>();
     final storage = context.read<StorageService>();
     final messenger = ScaffoldMessenger.of(context);
@@ -358,6 +369,24 @@ class _AccountViewState extends State<AccountView> {
   }
 
   Future<void> _startSignin(String username, String? keyId) async {
+    // Demo mode: skip real auth flow entirely.
+    if (username == 'demo') {
+      setState(() { _busy = true; _busyMessage = 'Signing in...'; });
+      final demo = DemoService();
+      final storage = context.read<StorageService>();
+      demo.activate();
+      await storage.saveAccount(demo.account);
+      await _loadAccount();
+      if (mounted) {
+        context.read<DiscoveryService>().refresh();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Signed in successfully')),
+        );
+        setState(() { _busy = false; _busyMessage = null; });
+      }
+      return;
+    }
+
     setState(() {
       _busy = true;
       _busyMessage = 'Preparing key...';
@@ -651,6 +680,7 @@ class _AccountViewState extends State<AccountView> {
       ),
     );
     if (confirmed != true) return;
+    DemoService().deactivate();
     await storage.deleteAccount();
     if (mounted) context.read<DiscoveryService>().refresh();
     setState(() {

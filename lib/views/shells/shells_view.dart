@@ -6,6 +6,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/shell.dart';
+import '../../services/demo_service.dart';
 import '../../services/iap_service.dart';
 import '../../services/key_service.dart';
 import '../../services/relay_api_service.dart';
@@ -80,6 +81,11 @@ class _ShellsTabState extends State<ShellsTab> {
   }
 
   Future<void> _refresh() async {
+    final demo = DemoService();
+    if (demo.isActive) {
+      if (mounted) setState(() { _shells = demo.shells; _loading = false; });
+      return;
+    }
     setState(() => _loading = true);
     try {
       final token = await _getAuthToken();

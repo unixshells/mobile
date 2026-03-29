@@ -1,1 +1,1 @@
-
+Demo mode: Sign in with username "demo" (no password or email approval needed). This activates a built-in demo mode that shows mock devices, sessions, and shells so you can review all relay features without requiring real server hardware. The app connects to remote servers via SSH — there is no physical hardware pairing involved. Direct SSH connections work with any standard SSH server. The relay feature lets users reach machines behind NAT/firewalls via our cloud infrastructure.

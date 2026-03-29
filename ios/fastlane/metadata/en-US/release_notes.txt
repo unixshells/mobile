@@ -1,3 +1,4 @@
+- Subscribe to Shell monthly or yearly directly in the app
 - Per-connection and per-session host key management
 - Clear host keys from settings
 - Improved security for API status calls
