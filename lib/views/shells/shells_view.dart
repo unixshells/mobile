@@ -117,6 +117,10 @@ class _ShellsTabState extends State<ShellsTab> {
       ),
     );
     if (confirmed != true) return;
+    if (DemoService().isActive) {
+      _showMessage('Shell ${shell.id} destroyed (demo)');
+      return;
+    }
     try {
       final token = await _getAuthToken();
       if (token == null) return;
@@ -141,6 +145,10 @@ class _ShellsTabState extends State<ShellsTab> {
       ),
     );
     if (confirmed != true) return;
+    if (DemoService().isActive) {
+      _showMessage('Shell ${shell.id} restarting (demo)');
+      return;
+    }
     try {
       final token = await _getAuthToken();
       if (token == null) return;

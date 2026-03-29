@@ -5,6 +5,7 @@ import 'package:xterm/xterm.dart' as xterm;
 
 import '../../models/connection.dart';
 import '../../models/terminal_theme.dart';
+import '../../services/demo_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/sftp_service.dart';
 import '../../services/storage_service.dart';
@@ -67,6 +68,19 @@ class _TerminalPageState extends State<TerminalPage>
   }
 
   Future<void> _connectPending(Connection conn) async {
+    // Demo mode: show a mock terminal instead of connecting.
+    if (DemoService().isActive) {
+      _connectingTerminal = xterm.Terminal(maxLines: 10000);
+      setState(() { _connecting = true; _connectError = null; });
+      _connectingTerminal!.write('Connecting to ${conn.label}...\r\n');
+      await Future.delayed(const Duration(milliseconds: 600));
+      if (!mounted) return;
+      _connectingTerminal!.write('\x1b[32mConnected.\x1b[0m\r\n\r\n');
+      _writeDemoContent(_connectingTerminal!, conn);
+      setState(() => _connecting = false);
+      return;
+    }
+
     _connectingTerminal = xterm.Terminal(maxLines: 10000);
     setState(() {
       _connecting = true;
@@ -91,6 +105,49 @@ class _TerminalPageState extends State<TerminalPage>
         _connectError = msg;
       });
       _connectingTerminal?.write('\x1b[31mConnection failed: $msg\x1b[0m\r\n');
+    }
+  }
+
+  void _writeDemoContent(xterm.Terminal term, Connection conn) {
+    final session = conn.sessionName ?? 'default';
+    final device = conn.relayDevice ?? conn.label;
+
+    if (device.contains('workstation') && session == 'dev') {
+      term.write('\x1b[1m$device\x1b[0m ~ \x1b[36mvim ~/project/main.go\x1b[0m\r\n\r\n');
+      term.write('  \x1b[34mpackage\x1b[0m main\r\n\r\n');
+      term.write('  \x1b[34mimport\x1b[0m (\r\n');
+      term.write('      \x1b[33m"fmt"\x1b[0m\r\n');
+      term.write('      \x1b[33m"net/http"\x1b[0m\r\n');
+      term.write('  )\r\n\r\n');
+      term.write('  \x1b[34mfunc\x1b[0m \x1b[32mmain\x1b[0m() {\r\n');
+      term.write('      http.HandleFunc(\x1b[33m"/"\x1b[0m, handler)\r\n');
+      term.write('      fmt.Println(\x1b[33m"Listening on :8080"\x1b[0m)\r\n');
+      term.write('      http.ListenAndServe(\x1b[33m":8080"\x1b[0m, \x1b[34mnil\x1b[0m)\r\n');
+      term.write('  }\r\n');
+    } else if (device.contains('prod')) {
+      term.write('\x1b[1m$device\x1b[0m ~ \x1b[36mtail -f /var/log/nginx/access.log\x1b[0m\r\n\r\n');
+      term.write('192.168.1.42 - - [28/Mar/2026:10:15:32 +0000] "GET /api/status HTTP/2.0" 200 1523\r\n');
+      term.write('10.0.0.8 - - [28/Mar/2026:10:15:33 +0000] "POST /api/sessions HTTP/2.0" 201 842\r\n');
+      term.write('192.168.1.42 - - [28/Mar/2026:10:15:35 +0000] "GET /api/devices HTTP/2.0" 200 3201\r\n');
+      term.write('172.16.0.3 - - [28/Mar/2026:10:15:36 +0000] "GET /health HTTP/2.0" 200 2\r\n');
+      term.write('10.0.0.12 - - [28/Mar/2026:10:15:38 +0000] "PUT /api/shell/renew HTTP/2.0" 200 156\r\n');
+      term.write('192.168.1.42 - - [28/Mar/2026:10:15:40 +0000] "GET /api/status HTTP/2.0" 200 1523\r\n');
+    } else if (device.contains('raspberry') || device.contains('pi')) {
+      term.write('\x1b[1m$device\x1b[0m ~ \x1b[36mmonitoring\x1b[0m\r\n\r\n');
+      term.write('\x1b[32mCPU:\x1b[0m  12% [####                                ]\r\n');
+      term.write('\x1b[32mMEM:\x1b[0m  41% [################                    ]  412MB / 1024MB\r\n');
+      term.write('\x1b[32mDISK:\x1b[0m 23% [#########                           ]  7.2G / 32G\r\n');
+      term.write('\x1b[32mTEMP:\x1b[0m 48.3°C\r\n');
+      term.write('\x1b[32mUP:\x1b[0m   14 days, 6:32:15\r\n\r\n');
+      term.write('\x1b[33mServices:\x1b[0m\r\n');
+      term.write('  pihole-FTL    \x1b[32mactive (running)\x1b[0m\r\n');
+      term.write('  homebridge    \x1b[32mactive (running)\x1b[0m\r\n');
+      term.write('  tailscaled    \x1b[32mactive (running)\x1b[0m\r\n');
+    } else {
+      term.write('\x1b[1m$device\x1b[0m ~ \x1b[36m$session\x1b[0m\r\n\r\n');
+      term.write('\x1b[32mdemo@$device\x1b[0m:\x1b[34m~\x1b[0m\$ uptime\r\n');
+      term.write(' 10:15:42 up 14 days,  6:32,  1 user,  load average: 0.12, 0.08, 0.05\r\n\r\n');
+      term.write('\x1b[32mdemo@$device\x1b[0m:\x1b[34m~\x1b[0m\$ _\r\n');
     }
   }
 
