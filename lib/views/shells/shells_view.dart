@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/connection.dart';
 import '../../models/shell.dart';
 import '../../services/demo_service.dart';
 import '../../services/iap_service.dart';
 import '../../services/key_service.dart';
 import '../../services/relay_api_service.dart';
 import '../../services/storage_service.dart';
+import '../terminal/terminal_view.dart';
 
 /// Shells management tab. Lists shells, create/destroy/restart.
 /// Shells also appear as devices in the Unix Shells tab for connecting.
@@ -229,13 +231,33 @@ class _ShellsTabState extends State<ShellsTab> {
     );
   }
 
+  void _connectToShell(Shell shell) {
+    final conn = Connection(
+      id: 'shell-${shell.id}',
+      label: shell.id,
+      host: '${shell.id}.iapdemo.unixshells.com',
+      port: 22,
+      username: 'iapdemo',
+      authMethod: AuthMethod.key,
+      type: ConnectionType.relay,
+      relayDevice: shell.id,
+      sessionName: 'default',
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => TerminalPage(pendingConnection: conn)),
+    );
+  }
+
   Widget _buildShellCard(Shell shell) {
-    return _ShellCard(
-      shell: shell,
-      api: _api,
-      getAuthToken: _getAuthToken,
-      onRestart: () => _restartShell(shell),
-      onDestroy: () => _destroyShell(shell),
+    return GestureDetector(
+      onTap: DemoService().isActive && shell.isRunning ? () => _connectToShell(shell) : null,
+      child: _ShellCard(
+        shell: shell,
+        api: _api,
+        getAuthToken: _getAuthToken,
+        onRestart: () => _restartShell(shell),
+        onDestroy: () => _destroyShell(shell),
+      ),
     );
   }
 }
@@ -266,6 +288,15 @@ class _ShellCardState extends State<_ShellCard> {
   final _addKeyCtrl = TextEditingController();
 
   Future<void> _loadKeys() async {
+    if (DemoService().isActive) {
+      if (mounted) setState(() {
+        _keys = [
+          {'type': 'ssh-ed25519', 'key': 'AAAAC3NzaC1lZDI1NTE5AAAAIGd2...', 'comment': 'iapdemo@shell', 'id': 'demo-key-1'},
+        ];
+        _keysLoading = false;
+      });
+      return;
+    }
     setState(() => _keysLoading = true);
     try {
       final token = await widget.getAuthToken();

@@ -143,11 +143,22 @@ class _TerminalPageState extends State<TerminalPage>
       term.write('  pihole-FTL    \x1b[32mactive (running)\x1b[0m\r\n');
       term.write('  homebridge    \x1b[32mactive (running)\x1b[0m\r\n');
       term.write('  tailscaled    \x1b[32mactive (running)\x1b[0m\r\n');
+    } else if (device.contains('shell-demo')) {
+      term.write('\x1b[32miapdemo@$device\x1b[0m:\x1b[34m~\x1b[0m\$ neofetch\r\n');
+      term.write('       \x1b[34m_,met\$\$\$\$\$gg.\x1b[0m           iapdemo@$device\r\n');
+      term.write('    \x1b[34m,g\$\$\$\$\$\$\$\$\$\$\$\$\$\$p.\x1b[0m       \x1b[34mOS:\x1b[0m Debian GNU/Linux 12\r\n');
+      term.write('  \x1b[34m,g\$\$P""\x1b[0m     \x1b[34m"""Y\$\$.".\x1b[0m    \x1b[34mKernel:\x1b[0m 6.1.0-18-cloud-amd64\r\n');
+      term.write(' \x1b[34m,\$\$P\'\x1b[0m              \x1b[34m`\$\$\$.\x1b[0m  \x1b[34mUptime:\x1b[0m 23 days, 4:12\r\n');
+      term.write(' \x1b[34m\'\$\$,\x1b[0m       \x1b[34m____\x1b[0m    \x1b[34m\$\$P\x1b[0m   \x1b[34mShell:\x1b[0m bash 5.2.15\r\n');
+      term.write('  \x1b[34m`Y\$\$b,\x1b[0m           \x1b[34m,\$\$P\'\x1b[0m   \x1b[34mCPU:\x1b[0m AMD EPYC (2) @ 2.45GHz\r\n');
+      term.write('   \x1b[34m`"Y\$\$\x1b[0m         \x1b[34m\$\$\'\x1b[0m     \x1b[34mMemory:\x1b[0m 142MiB / 1024MiB\r\n\r\n');
+      term.write('\x1b[32miapdemo@$device\x1b[0m:\x1b[34m~\x1b[0m\$ ls\r\n');
+      term.write('\x1b[34mDocuments\x1b[0m  \x1b[34mprojects\x1b[0m  \x1b[34m.ssh\x1b[0m  README.md  setup.sh\r\n\r\n');
+      term.write('\x1b[32miapdemo@$device\x1b[0m:\x1b[34m~\x1b[0m\$ _\r\n');
     } else {
-      term.write('\x1b[1m$device\x1b[0m ~ \x1b[36m$session\x1b[0m\r\n\r\n');
-      term.write('\x1b[32mdemo@$device\x1b[0m:\x1b[34m~\x1b[0m\$ uptime\r\n');
+      term.write('\x1b[32miapdemo@$device\x1b[0m:\x1b[34m~\x1b[0m\$ uptime\r\n');
       term.write(' 10:15:42 up 14 days,  6:32,  1 user,  load average: 0.12, 0.08, 0.05\r\n\r\n');
-      term.write('\x1b[32mdemo@$device\x1b[0m:\x1b[34m~\x1b[0m\$ _\r\n');
+      term.write('\x1b[32miapdemo@$device\x1b[0m:\x1b[34m~\x1b[0m\$ _\r\n');
     }
   }
 

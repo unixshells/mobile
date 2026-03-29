@@ -356,7 +356,7 @@ class _HomeViewState extends State<HomeView> {
                         ...online.expand((device) {
                           final alive = device.sessions.where((s) => s.status == 'alive').toList();
                           return [
-                            _drawerMachine(device.name, alive.length, true),
+                            _drawerMachine(device, alive.length, true),
                             ...alive.map((s) => _drawerSession(device, s)),
                           ];
                         }),
@@ -412,33 +412,42 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _drawerMachine(String deviceName, int sessionCount, bool online) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-      child: Row(
-        children: [
-          Container(
-            width: 8, height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: online ? accent : textMuted,
-              boxShadow: online ? [BoxShadow(color: accent.withValues(alpha: 0.4), blurRadius: 6)] : null,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(deviceName, style: const TextStyle(color: textBright, fontSize: 14, fontWeight: FontWeight.w500)),
-          ),
-          if (sessionCount > 0)
+  Widget _drawerMachine(Device device, int sessionCount, bool online) {
+    return InkWell(
+      onTap: () {
+        final alive = device.sessions.where((s) => s.status == 'alive').toList();
+        if (alive.isNotEmpty) {
+          Navigator.pop(context);
+          _connectToRelaySession(device, alive.first.name);
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+        child: Row(
+          children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              width: 8, height: 8,
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                shape: BoxShape.circle,
+                color: online ? accent : textMuted,
+                boxShadow: online ? [BoxShadow(color: accent.withValues(alpha: 0.4), blurRadius: 6)] : null,
               ),
-              child: Text('$sessionCount', style: const TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.w500)),
             ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(device.name, style: const TextStyle(color: textBright, fontSize: 14, fontWeight: FontWeight.w500)),
+            ),
+            if (sessionCount > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('$sessionCount', style: const TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.w500)),
+              ),
+          ],
+        ),
       ),
     );
   }

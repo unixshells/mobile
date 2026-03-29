@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'util/constants.dart';
+import 'services/demo_service.dart';
 import 'services/discovery_service.dart';
 import 'services/key_service.dart';
 import 'services/relay_api_service.dart';
@@ -37,6 +38,13 @@ class _UnixShellsAppState extends State<UnixShellsApp> {
   }
 
   Future<void> _initRelayApi() async {
+    // Clear demo account on restart — demo mode should not persist.
+    final account = await _storage.getAccount();
+    if (account != null && account.username == 'iapdemo') {
+      await _storage.deleteAccount();
+      DemoService().deactivate();
+    }
+
     final host = await _storage.getSetting('relay_host');
     if (host != null && host.isNotEmpty) {
       _api = RelayApiService.fromHost(host: host);
