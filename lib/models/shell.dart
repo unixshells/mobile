@@ -7,6 +7,8 @@ class Shell {
   final int diskGb;
   final String state;
   final String createdAt;
+  final String stripeSubId;
+  final String previewUrl;
 
   Shell({
     required this.id,
@@ -17,6 +19,8 @@ class Shell {
     this.diskGb = 0,
     this.state = '',
     this.createdAt = '',
+    this.stripeSubId = '',
+    this.previewUrl = '',
   });
 
   factory Shell.fromJson(Map<String, dynamic> m) => Shell(
@@ -28,9 +32,13 @@ class Shell {
         diskGb: m['disk_gb'] as int? ?? 0,
         state: m['state'] as String? ?? '',
         createdAt: m['created_at'] as String? ?? '',
+        stripeSubId: m['stripe_sub_id'] as String? ?? '',
+        previewUrl: m['preview_url'] as String? ?? '',
       );
 
   String get specs => '${memMb}MB / ${vcpus}vCPU / ${diskGb}GB';
 
   bool get isRunning => state == 'running';
+
+  bool get isStripe => stripeSubId.isNotEmpty;
 }

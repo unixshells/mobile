@@ -302,6 +302,10 @@ class _ShellCardState extends State<_ShellCard> {
             ]),
             const SizedBox(height: 8),
             Text('${shell.plan} — ${shell.specs}', style: const TextStyle(fontSize: 12, color: Color(0xFF7c8594))),
+            if (shell.previewUrl.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(shell.previewUrl, style: const TextStyle(fontSize: 11, color: Color(0xFF58a6ff), fontFamily: 'monospace')),
+            ],
             if (shell.isRunning) ...[
               const SizedBox(height: 12),
               Row(children: [
@@ -311,8 +315,10 @@ class _ShellCardState extends State<_ShellCard> {
                 }),
                 const SizedBox(width: 8),
                 _actionButton('Restart', widget.onRestart),
-                const SizedBox(width: 8),
-                _actionButton('Destroy', widget.onDestroy, danger: true),
+                if (shell.isStripe) ...[
+                  const SizedBox(width: 8),
+                  _actionButton('Destroy', widget.onDestroy, danger: true),
+                ],
               ]),
             ],
           ]),

@@ -388,26 +388,37 @@ class _HomeViewState extends State<HomeView> {
 
   Widget _drawerSection(String label) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-      child: Text(label, style: const TextStyle(color: textMuted, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.8)),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      child: Text(label.toUpperCase(), style: const TextStyle(color: textMuted, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1.2)),
     );
   }
 
   Widget _drawerMachine(String deviceName, int sessionCount, bool online) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 2),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
       child: Row(
         children: [
           Container(
-            width: 7, height: 7,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: online ? accent : textMuted),
+            width: 8, height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: online ? accent : textMuted,
+              boxShadow: online ? [BoxShadow(color: accent.withValues(alpha: 0.4), blurRadius: 6)] : null,
+            ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(deviceName, style: const TextStyle(color: textBright, fontSize: 13, fontWeight: FontWeight.w500)),
+            child: Text(deviceName, style: const TextStyle(color: textBright, fontSize: 14, fontWeight: FontWeight.w500)),
           ),
           if (sessionCount > 0)
-            Text('$sessionCount', style: const TextStyle(color: textMuted, fontSize: 11)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('$sessionCount', style: const TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.w500)),
+            ),
         ],
       ),
     );
@@ -423,19 +434,30 @@ class _HomeViewState extends State<HomeView> {
         Navigator.pop(context);
         _editRelaySession(device, session.name);
       },
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(37, 4, 20, 4),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(40, 12, 20, 12),
         child: Row(
           children: [
-            const Icon(Icons.terminal, color: textMuted, size: 13),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(session.name, style: const TextStyle(color: textDim, fontSize: 12)),
-            ),
-            if (session.title.isNotEmpty)
-              Flexible(
-                child: Text(session.title, style: const TextStyle(color: textMuted, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Container(
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(6),
               ),
+              child: const Icon(Icons.terminal, color: accent, size: 14),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(session.name, style: const TextStyle(color: textBright, fontSize: 13, fontWeight: FontWeight.w400)),
+                  if (session.title.isNotEmpty)
+                    Text(session.title, style: const TextStyle(color: textMuted, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: textMuted, size: 16),
           ],
         ),
       ),
@@ -449,24 +471,30 @@ class _HomeViewState extends State<HomeView> {
         _connect(conn);
       },
       onLongPress: () => _deleteConnection(conn),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
             Container(
-              width: 7, height: 7,
-              decoration: const BoxDecoration(shape: BoxShape.circle, color: textMuted),
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                color: bgCard,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: borderColor),
+              ),
+              child: const Icon(Icons.link, color: textDim, size: 14),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(conn.label, style: const TextStyle(color: textBright, fontSize: 13)),
+                  Text(conn.label, style: const TextStyle(color: textBright, fontSize: 13, fontWeight: FontWeight.w400)),
                   Text(conn.destination, style: const TextStyle(color: textMuted, fontSize: 11)),
                 ],
               ),
             ),
+            const Icon(Icons.chevron_right, color: textMuted, size: 16),
           ],
         ),
       ),
@@ -479,13 +507,22 @@ class _HomeViewState extends State<HomeView> {
         Navigator.pop(context);
         _returnToTerminals(index);
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
-            const Icon(Icons.terminal, color: accent, size: 14),
-            const SizedBox(width: 10),
+            Container(
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(Icons.terminal, color: accent, size: 14),
+            ),
+            const SizedBox(width: 12),
             Text(label, style: const TextStyle(color: textBright, fontSize: 13)),
+            const Spacer(),
+            const Icon(Icons.chevron_right, color: textMuted, size: 16),
           ],
         ),
       ),
