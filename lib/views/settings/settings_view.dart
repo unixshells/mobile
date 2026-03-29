@@ -240,15 +240,6 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Website',
-                      style: TextStyle(color: textBright)),
-                  subtitle: const Text('unixshells.com',
-                      style: TextStyle(color: accent)),
-                  onTap: () =>
-                      launchUrl(Uri.parse('https://unixshells.com')),
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
                   title: const Text('Licenses',
                       style: TextStyle(color: textBright)),
                   onTap: () => showLicensePage(
