@@ -310,6 +310,36 @@ class RelayApiService {
     }
   }
 
+  /// Get IAP slot usage info. Returns {slots_total, slots_used, slots_free, iap_product, iap_platform, shells}.
+  Future<Map<String, dynamic>> getSlotInfo({required String token}) async {
+    final resp = await _client.get(
+      Uri.parse('$_baseURL/api/iap/slots'),
+      headers: {'Authorization': 'Bearer $token'},
+    ).timeout(_timeout);
+    if (resp.statusCode != 200) {
+      throw ApiException('failed to get slot info', resp.statusCode);
+    }
+    return jsonDecode(resp.body) as Map<String, dynamic>;
+  }
+
+  /// Provision a shell from available IAP slots.
+  Future<Shell> provisionFromSlots(String plan, {required String token}) async {
+    final resp = await _client.post(
+      Uri.parse('$_baseURL/api/iap/provision'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'plan': plan}),
+    ).timeout(_timeout);
+    if (resp.statusCode != 201) {
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      throw ApiException(body['error'] ?? 'provisioning failed', resp.statusCode);
+    }
+    final body = jsonDecode(resp.body) as Map<String, dynamic>;
+    return Shell.fromJson(body['shell'] as Map<String, dynamic>);
+  }
+
   /// Get account status and device list. Requires auth token (timestamp:signature).
   Future<AccountStatus> getStatus(String username, {required String token}) async {
     final resp = await _client.get(

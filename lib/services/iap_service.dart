@@ -8,20 +8,15 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../util/constants.dart';
 
-/// Product IDs — must match App Store Connect / Google Play Console.
-const kShellMonthly = 'com.unixshells.shell.monthly';
-const kShellYearly = 'com.unixshells.shell.yearly';
-const kShellPlusMonthly = 'com.unixshells.shell_plus.monthly';
-const kShellPlusYearly = 'com.unixshells.shell_plus.yearly';
-
-const _allProductIds = {
-  kShellMonthly,
-  kShellYearly,
-  kShellPlusMonthly,
-  kShellPlusYearly,
+/// Slot-based product IDs: com.unixshells.slots.{1-10}.{monthly|yearly}
+final _allProductIds = {
+  for (var i = 1; i <= 10; i++) ...[
+    'com.unixshells.slots.$i.monthly',
+    'com.unixshells.slots.$i.yearly',
+  ],
 };
 
-/// Manages in-app purchase flow for shell subscriptions.
+/// Manages in-app purchase flow for slot-based shell subscriptions.
 class IAPService extends ChangeNotifier {
   final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _sub;
@@ -57,8 +52,22 @@ class IAPService extends ChangeNotifier {
       return;
     }
     products = response.productDetails;
+    // Sort by slot count (extracted from product ID).
+    products.sort((a, b) => slotCount(a.id).compareTo(slotCount(b.id)));
     notifyListeners();
   }
+
+  /// Extract slot count from product ID.
+  static int slotCount(String productId) {
+    final parts = productId.split('.');
+    if (parts.length == 5) {
+      return int.tryParse(parts[3]) ?? 0;
+    }
+    return 0;
+  }
+
+  /// Whether the product is yearly billing.
+  static bool isYearly(String productId) => productId.endsWith('.yearly');
 
   /// Start a purchase flow.
   Future<void> purchase(ProductDetails product) async {
@@ -67,7 +76,10 @@ class IAPService extends ChangeNotifier {
     successMessage = null;
     notifyListeners();
 
-    final param = PurchaseParam(productDetails: product);
+    final param = PurchaseParam(
+      productDetails: product,
+      applicationUserName: username,
+    );
     try {
       await _iap.buyNonConsumable(purchaseParam: param);
     } catch (e) {
@@ -103,7 +115,7 @@ class IAPService extends ChangeNotifier {
     }
   }
 
-  /// Send receipt to our server for validation + shell provisioning.
+  /// Send receipt to our server for validation + slot activation.
   Future<void> _verifyAndDeliver(PurchaseDetails purchase) async {
     try {
       final receiptData = <String, dynamic>{
@@ -129,7 +141,9 @@ class IAPService extends ChangeNotifier {
       );
 
       if (resp.statusCode == 200) {
-        successMessage = 'Shell provisioning started. It will appear in your devices shortly.';
+        final body = jsonDecode(resp.body);
+        final free = body['slots_free'] ?? 0;
+        successMessage = 'Subscription activated. $free slot${free == 1 ? '' : 's'} available.';
       } else {
         final body = jsonDecode(resp.body);
         error = body['error'] ?? 'Verification failed';
