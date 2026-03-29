@@ -3,7 +3,7 @@ import '../models/device.dart';
 import '../models/shell.dart';
 
 /// Provides mock data when demo mode is active.
-/// Activated by signing in with username "demo".
+/// Activated by signing in with username "iapdemo".
 class DemoService {
   static final DemoService _instance = DemoService._();
   factory DemoService() => _instance;
@@ -17,8 +17,8 @@ class DemoService {
   void deactivate() => _active = false;
 
   UnixShellsAccount get account => UnixShellsAccount(
-        username: 'demo',
-        email: 'demo@unixshells.com',
+        username: 'iapdemo',
+        email: 'iapdemo@unixshells.com',
         subscriptionStatus: 'active',
       );
 
@@ -56,7 +56,7 @@ class DemoService {
   List<Shell> get shells => [
         Shell(
           id: 'shell-demo-1',
-          username: 'demo',
+          username: 'iapdemo',
           plan: 'shell',
           memMb: 1024,
           vcpus: 1,
@@ -66,7 +66,7 @@ class DemoService {
         ),
         Shell(
           id: 'shell-demo-2',
-          username: 'demo',
+          username: 'iapdemo',
           plan: 'shell',
           memMb: 2048,
           vcpus: 2,

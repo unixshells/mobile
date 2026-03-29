@@ -370,7 +370,7 @@ class _AccountViewState extends State<AccountView> {
 
   Future<void> _startSignin(String username, String? keyId) async {
     // Demo mode: skip real auth flow entirely.
-    if (username == 'demo') {
+    if (username == 'iapdemo') {
       setState(() { _busy = true; _busyMessage = 'Signing in...'; });
       final demo = DemoService();
       final storage = context.read<StorageService>();

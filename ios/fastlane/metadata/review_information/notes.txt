@@ -1,7 +1,7 @@
 HOW TO TEST
 
 1. Open the app and tap the "account" tab at the bottom.
-2. Tap "Sign In" and enter username: demo (there is no password field — the app uses SSH key-based authentication, not passwords. For the demo account, simply enter "demo" as the username and tap Sign In.)
+2. Tap "Sign In" and enter username: iapdemo (there is no password field — the app uses SSH key-based authentication, not passwords. For the demo account, simply enter "iapdemo" as the username and tap Sign In.)
 3. No SSH key selection or email approval is needed — the demo account signs in immediately.
 4. Once signed in, you will see the account page with an active subscription, registered devices, and their sessions.
 5. Tap the "shells" tab to see managed shell instances with their specs and status.
