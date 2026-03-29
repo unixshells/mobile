@@ -263,6 +263,20 @@ class _ShellCardState extends State<_ShellCard> {
     }
   }
 
+  Future<void> _removeKey(String keyId) async {
+    if (keyId.isEmpty) return;
+    try {
+      final token = await widget.getAuthToken();
+      if (token == null) return;
+      await widget.api.removeShellKey(widget.shell.id, keyId, token: token);
+      _loadKeys();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
   Future<void> _addKey() async {
     final pubkey = _addKeyCtrl.text.trim();
     if (pubkey.isEmpty) return;
@@ -341,11 +355,24 @@ class _ShellCardState extends State<_ShellCard> {
                 const Text('No keys found.', style: TextStyle(color: Color(0xFF4a5060), fontSize: 12))
               else if (_keys != null)
                 ..._keys!.map((k) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    '${k['type'] ?? ''} ${k['key'] ?? ''}${k['comment'] != null ? ' ${k['comment']}' : ''}',
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 10, color: Color(0xFF7c8594)),
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${k['type'] ?? ''} ${k['key'] ?? ''}${k['comment'] != null ? ' ${k['comment']}' : ''}',
+                          style: const TextStyle(fontFamily: 'monospace', fontSize: 10, color: Color(0xFF7c8594)),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => _removeKey(k['id'] ?? ''),
+                        child: const Padding(
+                          padding: EdgeInsets.only(left: 8),
+                          child: Icon(Icons.close, size: 14, color: Color(0xFFc83c3c)),
+                        ),
+                      ),
+                    ],
                   ),
                 )),
               const SizedBox(height: 8),

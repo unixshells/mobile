@@ -298,6 +298,18 @@ class RelayApiService {
     }
   }
 
+  /// Remove an SSH key from a shell's latch authorized_keys.
+  Future<void> removeShellKey(String shellId, String keyId, {required String token}) async {
+    final resp = await _client.delete(
+      Uri.parse('$_baseURL/api/shells/$shellId/keys/$keyId'),
+      headers: {'Authorization': 'Bearer $token'},
+    ).timeout(_timeout);
+    if (resp.statusCode != 200) {
+      final body = jsonDecode(resp.body);
+      throw ApiException(body['error'] ?? 'failed to remove key', resp.statusCode);
+    }
+  }
+
   /// Get account status and device list. Requires auth token (timestamp:signature).
   Future<AccountStatus> getStatus(String username, {required String token}) async {
     final resp = await _client.get(
