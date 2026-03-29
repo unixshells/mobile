@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/connection.dart';
 import '../../models/device.dart';
+import '../../services/demo_service.dart';
 import '../../services/discovery_service.dart';
 import '../shells/shells_view.dart';
 import '../../services/key_service.dart';
@@ -60,6 +61,24 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _connectToRelaySession(Device device, String sessionName) async {
+    // In demo mode, go directly to terminal with a simple mock connection.
+    if (DemoService().isActive) {
+      final conn = Connection(
+        id: 'demo-${device.name}-$sessionName',
+        label: '${device.name}/$sessionName',
+        host: '${device.name}.iapdemo.unixshells.com',
+        port: 22,
+        username: 'iapdemo',
+        authMethod: AuthMethod.key,
+        type: ConnectionType.relay,
+        relayUsername: 'iapdemo',
+        relayDevice: device.name,
+        sessionName: sessionName,
+      );
+      _connect(conn);
+      return;
+    }
+
     final storage = context.read<StorageService>();
     final account = await storage.getAccount();
     if (account == null) return;
