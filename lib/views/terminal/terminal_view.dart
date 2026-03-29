@@ -283,8 +283,15 @@ class _TerminalPageState extends State<TerminalPage>
 
   @override
   Widget build(BuildContext context) {
+    final isDemoTerminal = DemoService().isActive && _connectingTerminal != null && !_connecting;
     return Scaffold(
       backgroundColor: bgDark,
+      appBar: isDemoTerminal
+          ? AppBar(
+              backgroundColor: bgCard,
+              title: Text(widget.pendingConnection?.label ?? 'Demo'),
+            )
+          : null,
       body: SafeArea(
         child: PrefixDrawer(
           onSend: (sequence) => _activeTerminal.textInput(sequence),
@@ -292,9 +299,7 @@ class _TerminalPageState extends State<TerminalPage>
             children: [
               if (_connecting || _connectError != null)
                 _buildConnectingBar()
-              else if (DemoService().isActive && _connectingTerminal != null)
-                _buildDemoBar()
-              else
+              else if (!isDemoTerminal)
                 _buildSessionTabs(),
               if (_showSearch) _buildSearchBar(),
               Expanded(
@@ -326,30 +331,6 @@ class _TerminalPageState extends State<TerminalPage>
       ),
       autofocus: !_connecting,
       deleteDetection: true,
-    );
-  }
-
-  Widget _buildDemoBar() {
-    return Container(
-      color: bgCard,
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white54, size: 20),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              widget.pendingConnection?.label ?? 'Demo',
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

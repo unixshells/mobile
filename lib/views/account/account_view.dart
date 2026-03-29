@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/account.dart';
+import '../../models/connection.dart';
 import '../../models/device.dart';
 import '../../models/ssh_key.dart';
 import '../../services/demo_service.dart';
@@ -16,6 +17,7 @@ import '../../services/key_service.dart';
 import '../../services/relay_api_service.dart';
 import '../../services/storage_service.dart';
 import '../../util/constants.dart';
+import '../terminal/terminal_view.dart';
 
 class AccountView extends StatefulWidget {
   const AccountView({super.key});
@@ -242,18 +244,46 @@ class _AccountViewState extends State<AccountView> {
               child: Text('No devices registered',
                   style: TextStyle(color: textMuted)),
             ),
-          ..._devices.map((d) => ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: accent.withValues(alpha: 0.2),
-                  child: const Icon(Icons.computer,
-                      color: accent, size: 20),
+          ..._devices.expand((d) {
+            final sessions = d.sessions.where((s) => s.status == 'alive').toList();
+            if (sessions.isEmpty || !DemoService().isActive) {
+              return [
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: accent.withValues(alpha: 0.2),
+                    child: const Icon(Icons.computer, color: accent, size: 20),
+                  ),
+                  title: Text(d.name, style: const TextStyle(color: textBright)),
+                  subtitle: Text(d.addedAt, style: const TextStyle(color: textMuted, fontSize: 12)),
                 ),
-                title: Text(d.name,
-                    style: const TextStyle(color: textBright)),
-                subtitle: Text(d.addedAt,
-                    style: const TextStyle(
-                        color: textMuted, fontSize: 12)),
-              )),
+              ];
+            }
+            return sessions.map((s) => ListTile(
+              leading: CircleAvatar(
+                backgroundColor: accent.withValues(alpha: 0.2),
+                child: const Icon(Icons.computer, color: accent, size: 20),
+              ),
+              title: Text('${d.name} / ${s.name}', style: const TextStyle(color: textBright)),
+              subtitle: Text(s.title, style: const TextStyle(color: textMuted, fontSize: 12)),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: textMuted),
+              onTap: () {
+                final conn = Connection(
+                  id: 'demo-${d.name}-${s.name}',
+                  label: '${d.name}/${s.name}',
+                  host: '${d.name}.iapdemo.unixshells.com',
+                  port: 22,
+                  username: 'iapdemo',
+                  authMethod: AuthMethod.key,
+                  type: ConnectionType.relay,
+                  relayDevice: d.name,
+                  sessionName: s.name,
+                );
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => TerminalPage(pendingConnection: conn)),
+                );
+              },
+            ));
+          }),
           const SizedBox(height: 24),
           TextButton(
             onPressed: _signOut,
