@@ -292,6 +292,8 @@ class _TerminalPageState extends State<TerminalPage>
             children: [
               if (_connecting || _connectError != null)
                 _buildConnectingBar()
+              else if (DemoService().isActive && _connectingTerminal != null)
+                _buildDemoBar()
               else
                 _buildSessionTabs(),
               if (_showSearch) _buildSearchBar(),
@@ -324,6 +326,30 @@ class _TerminalPageState extends State<TerminalPage>
       ),
       autofocus: !_connecting,
       deleteDetection: true,
+    );
+  }
+
+  Widget _buildDemoBar() {
+    return Container(
+      color: bgCard,
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white54, size: 20),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              widget.pendingConnection?.label ?? 'Demo',
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
