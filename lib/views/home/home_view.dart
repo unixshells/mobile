@@ -3,10 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../models/connection.dart';
 import '../../models/device.dart';
-import '../../models/shell.dart';
 import '../../services/demo_service.dart';
 import '../../services/discovery_service.dart';
-import '../shells/shells_view.dart';
 import '../../services/key_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/storage_service.dart';
@@ -226,9 +224,6 @@ class _HomeViewState extends State<HomeView> {
     final base = [
       _Tab('terminal', Icons.terminal, _buildTerminalBody()),
     ];
-    if (_signedIn) {
-      base.add(_Tab('shells', Icons.dns_outlined, const ShellsTab()));
-    }
     base.add(_Tab('account', Icons.person_outline, const AccountView()));
     base.add(_Tab('settings', Icons.settings_outlined, const SettingsView()));
     return base;
@@ -622,12 +617,6 @@ class _HomeViewState extends State<HomeView> {
             return _buildDemoDeviceCard(device, session);
           });
         }),
-        const SizedBox(height: 24),
-        const Padding(
-          padding: EdgeInsets.only(bottom: 12),
-          child: Text('MANAGED SHELLS', style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1)),
-        ),
-        ...demo.shells.where((s) => s.isRunning).map(_buildDemoShellCard),
       ],
     );
   }
@@ -671,42 +660,4 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildDemoShellCard(Shell shell) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: bgCard,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ListTile(
-        leading: Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.dns, color: accent, size: 18),
-        ),
-        title: Text(shell.id, style: const TextStyle(color: textBright, fontSize: 14, fontFamily: 'monospace')),
-        subtitle: Text('${shell.plan} — ${shell.specs}', style: const TextStyle(color: textMuted, fontSize: 12)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: textMuted),
-        onTap: () {
-          final conn = Connection(
-            id: 'shell-${shell.id}',
-            label: shell.id,
-            host: '${shell.id}.iapdemo.unixshells.com',
-            port: 22,
-            username: 'iapdemo',
-            authMethod: AuthMethod.key,
-            type: ConnectionType.relay,
-            relayDevice: shell.id,
-            sessionName: 'default',
-          );
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => TerminalPage(pendingConnection: conn)),
-          );
-        },
-      ),
-    );
-  }
 }

@@ -1,6 +1,5 @@
 import '../models/account.dart';
 import '../models/device.dart';
-import '../models/shell.dart';
 
 /// Provides mock data when demo mode is active.
 /// Activated by signing in with username "iapdemo".
@@ -53,26 +52,4 @@ class DemoService {
         ),
       ];
 
-  List<Shell> get shells => [
-        Shell(
-          id: 'shell-demo-1',
-          username: 'iapdemo',
-          plan: 'shell',
-          memMb: 1024,
-          vcpus: 1,
-          diskGb: 10,
-          state: 'running',
-          createdAt: '2026-02-10T08:00:00Z',
-        ),
-        Shell(
-          id: 'shell-demo-2',
-          username: 'iapdemo',
-          plan: 'shell',
-          memMb: 2048,
-          vcpus: 2,
-          diskGb: 20,
-          state: 'running',
-          createdAt: '2026-03-01T12:00:00Z',
-        ),
-      ];
 }
