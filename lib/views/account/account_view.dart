@@ -32,6 +32,10 @@ class _AccountViewState extends State<AccountView> {
   bool _loading = true;
   bool _busy = false;
   String? _busyMessage;
+  bool _polling = false;
+  bool _cancelled = false;
+  String? _pendingUsername;
+  String? _pendingKeyId;
 
   @override
   void initState() {
@@ -163,6 +167,38 @@ class _AccountViewState extends State<AccountView> {
                         style: TextStyle(fontSize: 16, color: textBright)),
               ),
             ),
+            if (_polling) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: const RoundedRectangleBorder(),
+                      ),
+                      onPressed: _cancelSignin,
+                      child: const Text('Cancel', style: TextStyle(fontSize: 14)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: accent,
+                        side: const BorderSide(color: accent),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: const RoundedRectangleBorder(),
+                      ),
+                      onPressed: () => _startSignin(_pendingUsername!, _pendingKeyId),
+                      child: const Text('Resend', style: TextStyle(fontSize: 14)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -446,10 +482,17 @@ class _AccountViewState extends State<AccountView> {
       );
 
       // Poll for approval.
-      if (mounted) setState(() => _busyMessage = 'Check your email — waiting for approval...');
+      if (mounted) setState(() {
+        _busyMessage = 'Check your email — waiting for approval...';
+        _polling = true;
+        _pendingUsername = username;
+        _pendingKeyId = keyId;
+        _cancelled = false;
+      });
       final approvedUsername = await _pollForApproval(api, requestId);
+      if (mounted) setState(() => _polling = false);
       if (approvedUsername == null) {
-        if (mounted) {
+        if (mounted && !_cancelled) {
           messenger.showSnackBar(
             const SnackBar(content: Text('Request expired or not approved')),
           );
@@ -480,12 +523,21 @@ class _AccountViewState extends State<AccountView> {
     }
   }
 
+  void _cancelSignin() {
+    setState(() {
+      _cancelled = true;
+      _polling = false;
+      _busy = false;
+      _busyMessage = null;
+    });
+  }
+
   /// Poll for device request approval. Returns username on success, null on timeout.
   Future<String?> _pollForApproval(RelayApiService api, String requestId) async {
     // Poll every 3 seconds for up to 15 minutes.
     for (var i = 0; i < 300; i++) {
       await Future.delayed(const Duration(seconds: 3));
-      if (!mounted) return null;
+      if (!mounted || _cancelled) return null;
       try {
         final username = await api.getDeviceRequestStatus(requestId);
         if (username != null) return username;
