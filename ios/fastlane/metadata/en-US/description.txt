@@ -1,4 +1,4 @@
-Unix Shells gives you secure remote access to your Linux and Unix servers from anywhere. Connect via SSH or Mosh, transfer files with SFTP, and manage multiple sessions — all from your iPhone or iPad.
+Unix Shells is a free SSH and Mosh client that gives you secure remote access to your existing Linux and Unix servers from your iPhone or iPad. Connect to your own servers, transfer files with SFTP, and manage multiple terminal sessions. No subscription or in-app purchase required — all features are free.
 
 KEY FEATURES
 
@@ -18,7 +18,7 @@ Port Forwarding
 Set up local and remote port forwards on any connection. Access remote services securely through encrypted SSH tunnels.
 
 Unix Shells Relay
-Connect to servers behind NAT or firewalls without configuring port forwarding on your router. The Unix Shells relay infrastructure handles NAT traversal so you can reach your home server, office machine, or any device — no static IP required.
+Connect to servers behind NAT or firewalls without configuring port forwarding on your router. The free Unix Shells relay infrastructure handles NAT traversal so you can reach your home server, office machine, or any device — no static IP required. Sign up for a free account at unixshells.com.
 
 Latch Device Sessions
 Access named sessions on your registered devices through the relay. See which devices are online in real time, and connect to specific sessions like "work" or "default" with per-session preferences.
@@ -31,10 +31,6 @@ Export all your connections, keys, and settings to a JSON file for safekeeping o
 
 Remote AI Development
 Run AI coding agents like Claude Code, Codex, and other terminal-based AI tools from your phone. Mosh keeps your session alive through network changes, so long-running AI tasks continue uninterrupted while you're on the go. Monitor progress, review output, and steer your AI assistant from anywhere.
-
-SUBSCRIPTION
-
-Unix Shells Relay requires a Shell subscription. Subscribe monthly ($3.99/month) or yearly ($32.99/year) to get access to the relay infrastructure, NAT traversal, and managed shell environments. Direct SSH and Mosh connections to your own servers are always free — no subscription required.
 
 SECURITY
 All connections are end-to-end encrypted. SSH host keys are verified on first use and cached locally. Private keys never leave your device.

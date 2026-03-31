@@ -3,20 +3,15 @@ HOW TO TEST
 1. Open the app and tap the "account" tab at the bottom.
 2. Tap "Sign In" and enter username: iapdemo (there is no password field — the app uses SSH key-based authentication, not passwords. For the demo account, simply enter "iapdemo" as the username and tap Sign In.)
 3. No SSH key selection or email approval is needed — the demo account signs in immediately.
-4. Once signed in, you will see the account page with an active subscription, registered devices, and their sessions.
-5. Tap the "shells" tab to see managed shell instances with their specs and status.
-6. Swipe right (or tap the menu icon) to open the left drawer — this shows online relay devices and their active sessions. Tapping a session would normally connect via SSH to that device through our relay.
-7. The "terminal" tab shows active terminal sessions. You can also create direct SSH connections by tapping the + button in the drawer.
-8. The "settings" tab lets you configure terminal themes, fonts, manage SSH keys, and export/import backups.
+4. Once signed in, you will see the account page with an active subscription, registered devices, and their sessions. Tap any device session to open a mock terminal.
+5. Switch to the "terminal" tab to see relay devices and their sessions as tappable cards. Tapping opens a mock terminal showing what a real SSH connection looks like.
+6. Swipe right (or tap the menu icon) to open the left drawer — this shows online relay devices, saved connections, and active sessions.
+7. The "settings" tab lets you configure terminal themes, fonts, manage SSH keys, and export/import backups.
 
 ABOUT THIS APP
 
-Unix Shells is a remote terminal client (SSH and Mosh). It does NOT pair with any physical hardware. All connections are to remote servers over the network via encrypted SSH sessions.
+Unix Shells is a completely free remote terminal client (SSH and Mosh). There are no in-app purchases, subscriptions, or paid features. The app connects to the user's own servers — it does not sell or provide digital content, hosting, or compute resources.
 
-The "relay" feature lets users connect to machines behind NAT or firewalls via our cloud relay infrastructure — similar to a VPN or reverse tunnel. This is a cloud service, not a hardware accessory.
-
-IN-APP PURCHASES
-
-The Shell subscription ($3.99/month or $32.99/year) provides access to the Unix Shells relay infrastructure and managed shell environments. Direct SSH and Mosh connections to any server are free and do not require a subscription. The subscription can be purchased from the "shells" tab via the "New Shell" button.
+The app does NOT pair with any physical hardware. All connections are to remote servers over the network via encrypted SSH sessions. The optional "relay" feature lets users connect to machines behind NAT or firewalls via our free cloud relay infrastructure — similar to a VPN or reverse tunnel. This is a cloud service, not a hardware accessory.
 
 To sign out of demo mode, go to the "account" tab and tap "Sign Out".
