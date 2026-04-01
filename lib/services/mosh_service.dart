@@ -12,6 +12,7 @@ import '../crypto/ocb.dart';
 import '../models/connection.dart';
 import '../util/constants.dart';
 import 'mosh_framebuffer.dart';
+import 'mosh_predictor.dart';
 import 'package:native_udp/native_udp.dart';
 import 'ssh_service.dart';
 
@@ -169,6 +170,9 @@ class MoshSession {
   // What the display terminal currently shows.
   FramebufferSnapshot? _displayedSnapshot;
 
+  // Prediction engine for local echo.
+  final _predictor = MoshPredictor();
+
   // Terminal dimensions for creating fresh shadows.
   int _cols = 80;
   int _rows = 24;
@@ -256,11 +260,20 @@ class MoshSession {
         _receivedStates.removeWhere((k, _) => k < throwaway);
       }
 
-      // Display: diff latest state against what's on screen.
+      // Confirm predictions against server state and display.
       final latest = _receivedStates[_latestStateNum];
       if (latest != null) {
-        final ansi = latest.diffAnsi(_displayedSnapshot);
+        _predictor.confirm(latest);
+        _predictor.expireStale();
+
+        var ansi = latest.diffAnsi(_displayedSnapshot);
         _displayedSnapshot = latest;
+
+        // Apply prediction overlay.
+        if (_predictor.active) {
+          ansi += _predictor.overlayAnsi(latest);
+        }
+
         if (ansi.isNotEmpty) {
           _incoming.add(Uint8List.fromList(utf8.encode(ansi)));
         }
@@ -327,6 +340,14 @@ class MoshSession {
     _lastKeystrokeBytes = keys;
     _lastKeystrokeTime = now;
     _pendingKeys.add(UserInstruction(keys: keys));
+
+    // Feed predictor and emit immediate local echo.
+    if (_predictor.keystroke(s) && _displayedSnapshot != null) {
+      final overlay = _predictor.overlayAnsi(_displayedSnapshot!);
+      if (overlay.isNotEmpty) {
+        _incoming.add(Uint8List.fromList(utf8.encode(overlay)));
+      }
+    }
   }
 
   bool _startsWith(Uint8List data, Uint8List prefix) {
@@ -369,6 +390,7 @@ class MoshSession {
     _shadow.resize(width, height);
     _displayedSnapshot = null;
     _receivedStates.clear();
+    _predictor.reset();
     _pendingKeys.add(UserInstruction(width: width, height: height));
   }
 
