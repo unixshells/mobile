@@ -250,12 +250,10 @@ class MoshSession {
       _receivedStates[newNum] = snap;
       if (newNum > _latestStateNum) _latestStateNum = newNum;
 
-      // Bound the received states list (matching C++ 1024 cap).
-      if (_receivedStates.length > 128) {
-        final sorted = _receivedStates.keys.toList()..sort();
-        for (final k in sorted.take(sorted.length - 64)) {
-          _receivedStates.remove(k);
-        }
+      // Prune states the server no longer references.
+      final throwaway = _transport.throwawayNum;
+      if (throwaway > 0) {
+        _receivedStates.removeWhere((k, _) => k < throwaway);
       }
 
       // Display: diff latest state against what's on screen.
