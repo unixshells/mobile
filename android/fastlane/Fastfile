@@ -1,0 +1,45 @@
+default_platform(:android)
+
+platform :android do
+  desc "Download metadata from Google Play"
+  lane :download_metadata do
+    download_from_play_store
+  end
+
+  desc "Upload metadata to Google Play"
+  lane :upload_metadata do
+    upload_to_play_store(
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_changelogs: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Upload screenshots to Google Play"
+  lane :upload_screenshots do
+    upload_to_play_store(
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: false
+    )
+  end
+
+  desc "Build and upload to Play Store production"
+  lane :production do
+    Dir.chdir("..") do
+      sh("cd .. && flutter build appbundle --release")
+    end
+
+    upload_to_play_store(
+      track: "production",
+      aab: "../build/app/outputs/bundle/release/app-release.aab",
+      skip_upload_metadata: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end

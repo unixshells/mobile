@@ -1,0 +1,6 @@
+- Mosh local echo prediction for faster typing
+- Per-connection and per-session host key management
+- Clear host keys from settings
+- Improved security for API status calls
+- Cancel and resend during email approval
+- Updated app icon

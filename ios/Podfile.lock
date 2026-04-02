@@ -37,9 +37,6 @@ PODS:
   - flutter_secure_storage_darwin (10.0.0):
     - Flutter
     - FlutterMacOS
-  - in_app_purchase_storekit (0.0.1):
-    - Flutter
-    - FlutterMacOS
   - native_udp (0.0.1):
     - Flutter
   - receive_sharing_intent (1.8.1):
@@ -58,7 +55,6 @@ DEPENDENCIES:
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
   - Flutter (from `Flutter`)
   - flutter_secure_storage_darwin (from `.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
-  - in_app_purchase_storekit (from `.symlinks/plugins/in_app_purchase_storekit/darwin`)
   - native_udp (from `.symlinks/plugins/native_udp/ios`)
   - receive_sharing_intent (from `.symlinks/plugins/receive_sharing_intent/ios`)
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
@@ -78,8 +74,6 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_secure_storage_darwin:
     :path: ".symlinks/plugins/flutter_secure_storage_darwin/darwin"
-  in_app_purchase_storekit:
-    :path: ".symlinks/plugins/in_app_purchase_storekit/darwin"
   native_udp:
     :path: ".symlinks/plugins/native_udp/ios"
   receive_sharing_intent:
@@ -95,7 +89,6 @@ SPEC CHECKSUMS:
   file_picker: a0560bc09d61de87f12d246fc47d2119e6ef37be
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
-  in_app_purchase_storekit: 22cca7d08eebca9babdf4d07d0baccb73325d3c8
   native_udp: 69121b872a255aef6410df2b8005960d5abf5659
   receive_sharing_intent: 222384f00ffe7e952bbfabaa9e3967cb87e5fe00
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf

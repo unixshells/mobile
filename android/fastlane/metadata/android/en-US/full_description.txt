@@ -1,0 +1,36 @@
+Unix Shells is a free SSH and Mosh client that gives you secure remote access to your existing Linux and Unix servers from your phone or tablet. Connect to your own servers, transfer files with SFTP, and manage multiple terminal sessions. No subscription or in-app purchase required — all features are free.
+
+KEY FEATURES
+
+SSH & Mosh Connections
+Connect to any SSH server with password or key-based authentication. Switch to Mosh for seamless roaming — your session stays alive even when switching between Wi-Fi and cellular or passing through areas with no signal.
+
+Built-in SFTP File Manager
+Browse, upload, download, rename, and delete files on your remote servers. Use the share sheet to send files directly to any connected server.
+
+SSH Key Management
+Generate Ed25519 keys directly on your device, or import existing private keys. Copy your public key to the clipboard for easy server setup. Keys are stored securely on device.
+
+Multi-Session Support
+Run multiple terminal sessions simultaneously and switch between them with tabs. Each session maintains its own scrollback buffer and connection state.
+
+Port Forwarding
+Set up local and remote port forwards on any connection. Access remote services securely through encrypted SSH tunnels.
+
+Unix Shells Relay
+Connect to servers behind NAT or firewalls without configuring port forwarding on your router. The free Unix Shells relay infrastructure handles NAT traversal so you can reach your home server, office machine, or any device — no static IP required. Sign up for a free account at unixshells.com.
+
+Latch Device Sessions
+Access named sessions on your registered devices through the relay. See which devices are online in real time, and connect to specific sessions like "work" or "default" with per-session preferences.
+
+Terminal Emulator
+Full-featured terminal with 256-color support, 10,000-line scrollback, search, and a special key row for Ctrl, Alt, and other modifier keys. Choose from multiple color themes and fonts including Fira Code, JetBrains Mono, and Source Code Pro.
+
+Backup & Restore
+Export all your connections, keys, and settings to a JSON file for safekeeping or migration to another device. Import backups to restore your setup in seconds.
+
+Remote AI Development
+Run AI coding agents like Claude Code, Codex, and other terminal-based AI tools from your phone. Mosh keeps your session alive through network changes, so long-running AI tasks continue uninterrupted while you're on the go. Monitor progress, review output, and steer your AI assistant from anywhere.
+
+SECURITY
+All connections are end-to-end encrypted. SSH host keys are verified on first use and cached locally. Private keys never leave your device.
