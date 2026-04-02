@@ -111,8 +111,8 @@ class MoshPredictor {
       final cellCp = _cellCodepoint(fb, pred.x, pred.y);
       if (cellCp == pred.rune) {
         confirmed++;
-      } else if (cellCp == 0x20 || cellCp == 0) {
-        // Server hasn't caught up yet.
+      } else if ((cellCp == 0x20 || cellCp == 0) && pred.rune != 0x20) {
+        // Server hasn't caught up yet (but if we predicted a space, a space is a match).
         break;
       } else {
         // Server diverged.
