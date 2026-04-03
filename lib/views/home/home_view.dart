@@ -354,6 +354,7 @@ class _HomeViewState extends State<HomeView> {
                           return [
                             _drawerMachine(device, alive.length, true),
                             ...alive.map((s) => _drawerSession(device, s)),
+                            _drawerNewSession(device),
                           ];
                         }),
                       ],
@@ -484,6 +485,61 @@ class _HomeViewState extends State<HomeView> {
               ),
             ),
             const Icon(Icons.chevron_right, color: textMuted, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _drawerNewSession(Device device) {
+    return InkWell(
+      onTap: () async {
+        final name = await showDialog<String>(
+          context: context,
+          builder: (ctx) {
+            final controller = TextEditingController();
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1a1a2e),
+              title: const Text('New session', style: TextStyle(color: textBright, fontSize: 16)),
+              content: TextField(
+                controller: controller,
+                autofocus: true,
+                style: const TextStyle(color: textBright),
+                decoration: const InputDecoration(
+                  hintText: 'session name',
+                  hintStyle: TextStyle(color: textMuted),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: textMuted)),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: accent)),
+                ),
+                onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: textMuted))),
+                TextButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('Create', style: TextStyle(color: accent))),
+              ],
+            );
+          },
+        );
+        if (name != null && name.isNotEmpty && mounted) {
+          Navigator.pop(context);
+          _connectToRelaySession(device, name);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(40, 10, 20, 10),
+        child: Row(
+          children: [
+            Container(
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: accent.withValues(alpha: 0.15)),
+              ),
+              child: const Icon(Icons.add, color: textMuted, size: 14),
+            ),
+            const SizedBox(width: 12),
+            const Text('new session', style: TextStyle(color: textMuted, fontSize: 13)),
           ],
         ),
       ),
