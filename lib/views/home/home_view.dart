@@ -523,6 +523,10 @@ class _HomeViewState extends State<HomeView> {
         if (name != null && name.isNotEmpty && mounted) {
           Navigator.pop(context);
           _connectToRelaySession(device, name);
+          // Refresh device list so the new session appears in the drawer.
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) context.read<DiscoveryService>().refresh();
+          });
         }
       },
       child: Container(
